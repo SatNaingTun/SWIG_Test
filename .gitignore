@@ -1,0 +1,17 @@
+# SWIG generated files
+*_wrap.c
+*.py
+
+# Compiled object and shared library files
+*.o
+*.so
+*.pyd
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+
+# Build directories
+build/
+dist/
+*.egg-info/
