@@ -86,4 +86,4 @@ python3
 
 # SWIG PHP Compilation Guide
 
-• [SWIG Perl](./markdown-folder/swig_php_build_guide.md)
+• [SWIG PHP](./markdown-folder/swig_php_build_guide.md)
