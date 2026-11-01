@@ -64,3 +64,7 @@ python3
 >>> example.cvar.My_variable + 4.5
 7.5
 ```
+# SWIG C Sharp Compilation Guide
+
+• [SWIG CSharp](./swig_csharp_build_guide.md)
+
