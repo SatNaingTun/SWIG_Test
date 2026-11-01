@@ -68,3 +68,6 @@ python3
 
 • [SWIG CSharp](./swig_csharp_build_guide.md)
 
+# SWIG Java Compilation Guide
+
+• [SWIG Java](./swig_java_build_guide.md)
