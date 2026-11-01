@@ -83,3 +83,7 @@ python3
 # SWIG R Compilation Guide
 
 • [SWIG Perl](./markdown-folder/swig_r_build_guide.md)
+
+# SWIG PHP Compilation Guide
+
+• [SWIG Perl](./markdown-folder/swig_php_build_guide.md)
