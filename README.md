@@ -75,3 +75,7 @@ python3
 # SWIG JavaScript Compilation Guide
 
 • [SWIG JavaScript](./swig_javascript_build_guide.md)
+
+# SWIG Perl Compilation Guide
+
+• [SWIG Perl](./swig_perl_build_guide.md)
