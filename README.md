@@ -71,3 +71,7 @@ python3
 # SWIG Java Compilation Guide
 
 • [SWIG Java](./swig_java_build_guide.md)
+
+# SWIG JavaScript Compilation Guide
+
+• [SWIG JavaScript](./swig_javascript_build_guide.md)

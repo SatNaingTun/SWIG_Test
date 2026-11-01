@@ -1,13 +1,20 @@
 %module example
 
 %{
-/* C code block copied directly into example_wrap.c */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern double My_variable;
 extern int fact(int n);
 extern int my_mod(int x, int y);
+
+#ifdef __cplusplus
+}
+#endif
 %}
 
-/* SWIG parsing directives */
+/* SWIG interface declarations */
 extern double My_variable;
 extern int fact(int n);
 extern int my_mod(int x, int y);
