@@ -66,16 +66,20 @@ python3
 ```
 # SWIG C Sharp Compilation Guide
 
-• [SWIG CSharp](./swig_csharp_build_guide.md)
+• [SWIG CSharp](./markdown-folder/swig_csharp_build_guide.md)
 
 # SWIG Java Compilation Guide
 
-• [SWIG Java](./swig_java_build_guide.md)
+• [SWIG Java](./markdown-folder/swig_java_build_guide.md)
 
 # SWIG JavaScript Compilation Guide
 
-• [SWIG JavaScript](./swig_javascript_build_guide.md)
+• [SWIG JavaScript](./markdown-folder/swig_javascript_build_guide.md)
 
 # SWIG Perl Compilation Guide
 
-• [SWIG Perl](./swig_perl_build_guide.md)
+• [SWIG Perl](./markdown-folder/swig_perl_build_guide.md)
+
+# SWIG R Compilation Guide
+
+• [SWIG Perl](./markdown-folder/swig_r_build_guide.md)
