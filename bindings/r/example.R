@@ -5,7 +5,7 @@
 # the SWIG interface file instead.
 
 ##   Generated via the command line invocation:
-##	 swig -r example.i
+##	 swig -r -o bindings/r/example_wrap.c swig/example.i
 
 
 #                         srun.swg                            #
