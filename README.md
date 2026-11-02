@@ -87,3 +87,7 @@ python3
 # SWIG PHP Compilation Guide
 
 • [SWIG PHP](./markdown-folder/swig_php_build_guide.md)
+
+# SWIG Octave Compilation Guide
+
+• [SWIG Octave](./markdown-folder/swig_octave_build_guide.md)
