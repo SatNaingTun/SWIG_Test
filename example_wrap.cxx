@@ -8,7 +8,13 @@
 
 
 #define SWIG_VERSION 0x040400
-#define SWIGJAVASCRIPT
+#define SWIGOCTAVE
+#define SWIG_name_d      "example"
+#define SWIG_name        example
+
+#define SWIG_global_name      "cvar"
+#define SWIG_op_prefix        "op_"
+
 /* -----------------------------------------------------------------------------
  *  This section contains generic SWIG labels for method/variable
  *  declarations/attributes, and other compiler dependent labels.
@@ -167,30 +173,139 @@
 # define SWIG_snprintf2(O,S,F,A,B) sprintf(O,F,A,B)
 #endif
 
+//
+// This header includes all C++ headers required for generated Octave wrapper code.
+// Using a single header file allows pre-compilation of Octave headers, as follows:
+// * Check out this header file:
+//     swig -octave -co octheaders.hpp
+// * Pre-compile header file into octheaders.hpp.gch:
+//     g++ -c ... octheaders.hpp
+// * Use pre-compiled header file:
+//     g++ -c -include octheaders.hpp ...
+//
 
+#if !defined(SWIG_OCTAVE_OCTHEADERS_HPP)
+#define SWIG_OCTAVE_OCTHEADERS_HPP
 
-#define SWIG_exception_fail(code, msg) do { SWIG_Error(code, msg); SWIG_fail; } while(0) 
-
-#define SWIG_contract_assert(expr, msg) do { if (!(expr)) { SWIG_Error(SWIG_RuntimeError, msg); SWIG_fail; } } while (0) 
-
-
-
-#include <node.h>
-//Older version of node.h does not include this
-#include <node_version.h>
-
-
-#include <v8.h>
-
-#undef SWIG_V8_VERSION
-#define SWIG_V8_VERSION ((V8_MAJOR_VERSION / 10) * 4096 + \
-                         (V8_MAJOR_VERSION % 10) * 256 + \
-                         (V8_MINOR_VERSION / 10) * 16 + \
-                         (V8_MINOR_VERSION % 10))
-
-#include <limits.h>
-#include <stdlib.h>
+// Required C headers
 #include <assert.h>
+
+// Required C++ headers
+#include <cstdlib>
+#include <climits>
+#include <iostream>
+#include <exception>
+#include <functional>
+#include <complex>
+#include <string>
+#include <vector>
+#include <map>
+
+// Minimal headers to define Octave version
+#include <octave/oct.h>
+#include <octave/version.h>
+
+// Macro for enabling features which require Octave version >= major.minor.patch
+// - Use (OCTAVE_PATCH_VERSION + 0) to handle both '<digit>' (released) and '<digit>+' (in development) patch numbers
+#define SWIG_OCTAVE_PREREQ(major, minor, patch) \
+  ( (OCTAVE_MAJOR_VERSION<<16) + (OCTAVE_MINOR_VERSION<<8) + (OCTAVE_PATCH_VERSION + 0) >= ((major)<<16) + ((minor)<<8) + (patch) )
+
+// Reconstruct Octave major, minor, and patch versions for releases prior to 3.8.1
+#if !defined(OCTAVE_MAJOR_VERSION)
+
+# if !defined(OCTAVE_API_VERSION_NUMBER)
+
+// Hack to distinguish between Octave 3.8.0, which removed OCTAVE_API_VERSION_NUMBER but did not yet
+// introduce OCTAVE_MAJOR_VERSION, and Octave <= 3.2, which did not define OCTAVE_API_VERSION_NUMBER
+#  include <octave/ov.h>
+#  if defined(octave_ov_h)
+#   define OCTAVE_MAJOR_VERSION 3
+#   define OCTAVE_MINOR_VERSION 8
+#   define OCTAVE_PATCH_VERSION 0
+#  else
+
+// Hack to distinguish between Octave 3.2 and earlier versions, before OCTAVE_API_VERSION_NUMBER existed
+#   define ComplexLU __ignore
+#   include <octave/CmplxLU.h>
+#   undef ComplexLU
+#   if defined(octave_Complex_LU_h)
+
+// We know only that this version is prior to Octave 3.2, i.e. OCTAVE_API_VERSION_NUMBER < 37
+#    define OCTAVE_MAJOR_VERSION 3
+#    define OCTAVE_MINOR_VERSION 1
+#    define OCTAVE_PATCH_VERSION 99
+
+#   else
+
+// OCTAVE_API_VERSION_NUMBER == 37
+#    define OCTAVE_MAJOR_VERSION 3
+#    define OCTAVE_MINOR_VERSION 2
+#    define OCTAVE_PATCH_VERSION 0
+
+#   endif // defined(octave_Complex_LU_h)
+
+#  endif // defined(octave_ov_h)
+
+// Correlation between Octave API and version numbers extracted from Octave's
+// ChangeLogs; version is the *earliest* released Octave with that API number
+# elif OCTAVE_API_VERSION_NUMBER >= 48
+#  define OCTAVE_MAJOR_VERSION 3
+#  define OCTAVE_MINOR_VERSION 6
+#  define OCTAVE_PATCH_VERSION 0
+
+# elif OCTAVE_API_VERSION_NUMBER >= 45
+#  define OCTAVE_MAJOR_VERSION 3
+#  define OCTAVE_MINOR_VERSION 4
+#  define OCTAVE_PATCH_VERSION 1
+
+# elif OCTAVE_API_VERSION_NUMBER >= 42
+#  define OCTAVE_MAJOR_VERSION 3
+#  define OCTAVE_MINOR_VERSION 3
+#  define OCTAVE_PATCH_VERSION 54
+
+# elif OCTAVE_API_VERSION_NUMBER >= 41
+#  define OCTAVE_MAJOR_VERSION 3
+#  define OCTAVE_MINOR_VERSION 3
+#  define OCTAVE_PATCH_VERSION 53
+
+# elif OCTAVE_API_VERSION_NUMBER >= 40
+#  define OCTAVE_MAJOR_VERSION 3
+#  define OCTAVE_MINOR_VERSION 3
+#  define OCTAVE_PATCH_VERSION 52
+
+# elif OCTAVE_API_VERSION_NUMBER >= 39
+#  define OCTAVE_MAJOR_VERSION 3
+#  define OCTAVE_MINOR_VERSION 3
+#  define OCTAVE_PATCH_VERSION 51
+
+# else // OCTAVE_API_VERSION_NUMBER == 38
+#  define OCTAVE_MAJOR_VERSION 3
+#  define OCTAVE_MINOR_VERSION 3
+#  define OCTAVE_PATCH_VERSION 50
+
+# endif // !defined(OCTAVE_API_VERSION_NUMBER)
+
+#endif // !defined(OCTAVE_MAJOR_VERSION)
+
+// Required Octave headers
+#include <octave/Cell.h>
+#include <octave/dynamic-ld.h>
+#include <octave/oct-env.h>
+#include <octave/oct-map.h>
+#include <octave/ov-scalar.h>
+#include <octave/ov-fcn-handle.h>
+#include <octave/parse.h>
+#if SWIG_OCTAVE_PREREQ(4,2,0)
+#include <octave/interpreter.h>
+#else
+#include <octave/toplev.h>
+#endif
+#include <octave/unwind-prot.h>
+#if SWIG_OCTAVE_PREREQ(4,2,0)
+#include <octave/call-stack.h>
+#endif
+
+#endif // !defined(SWIG_OCTAVE_OCTHEADERS_HPP)
 
 /* -----------------------------------------------------------------------------
  * swigrun.swg
@@ -886,548 +1001,1733 @@ SWIG_UnpackDataName(const char *c, void *ptr, size_t sz, const char *name) {
 #define  SWIG_NullReferenceError   -13
 
 
-/* ---------------------------------------------------------------------------
- * These typedefs and defines are used to deal with v8 API changes
- *
- * Useful table of versions: https://nodejs.org/en/download/releases/
- * ---------------------------------------------------------------------------*/
+#if !SWIG_OCTAVE_PREREQ(3,2,0)
+#define SWIG_DEFUN(cname, wname, doc) DEFUNX_DLD(#cname, wname, FS ## cname, args, nargout, doc)
+#else
+#define SWIG_DEFUN(cname, wname, doc) DEFUNX_DLD(#cname, wname, G ## cname, args, nargout, doc)
+#endif
 
-#define SWIGV8_STRING_NEW2(cstr, len) (v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), cstr, v8::NewStringType::kNormal, len)).ToLocalChecked()
-
-typedef void SwigV8ReturnValue;
-typedef v8::FunctionCallbackInfo<v8::Value> SwigV8Arguments;
-typedef v8::PropertyCallbackInfo<v8::Value> SwigV8PropertyCallbackInfo;
-#define SWIGV8_RETURN(val) args.GetReturnValue().Set(val); return
-#define SWIGV8_RETURN_INFO(val, info) info.GetReturnValue().Set(val); return
-
-#define SWIGV8_HANDLESCOPE() v8::HandleScope scope(v8::Isolate::GetCurrent());
-#define SWIGV8_HANDLESCOPE_ESC() v8::EscapableHandleScope scope(v8::Isolate::GetCurrent());
-#define SWIGV8_ESCAPE(val) return scope.Escape(val)
-
-#define SWIGV8_ADJUST_MEMORY(size) v8::Isolate::GetCurrent()->AdjustAmountOfExternalAllocatedMemory(size)
-#define SWIGV8_CURRENT_CONTEXT() v8::Isolate::GetCurrent()->GetCurrentContext()
-#define SWIGV8_THROW_EXCEPTION(err) v8::Isolate::GetCurrent()->ThrowException(err)
-
-#define SWIGV8_STRING_NEW(str) (v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), str, v8::NewStringType::kNormal)).ToLocalChecked()
-#define SWIGV8_SYMBOL_NEW(sym) (v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), sym, v8::NewStringType::kNormal)).ToLocalChecked()
-
-#define SWIGV8_MAYBE_CHECK(maybe) maybe.Check()
-
-#define SWIGV8_ARRAY_NEW(size) v8::Array::New(v8::Isolate::GetCurrent(), size)
-#define SWIGV8_BOOLEAN_NEW(bool) v8::Boolean::New(v8::Isolate::GetCurrent(), bool)
-#define SWIGV8_EXTERNAL_NEW(val) v8::External::New(v8::Isolate::GetCurrent(), val)
-#define SWIGV8_FUNCTEMPLATE_NEW(func) v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), func)
-#define SWIGV8_FUNCTEMPLATE_NEW_VOID() v8::FunctionTemplate::New(v8::Isolate::GetCurrent())
-#define SWIGV8_INT32_NEW(num) v8::Int32::New(v8::Isolate::GetCurrent(), num)
-#define SWIGV8_INTEGER_NEW(num) v8::Integer::New(v8::Isolate::GetCurrent(), num)
-#define SWIGV8_INTEGER_NEW_UNS(num) v8::Integer::NewFromUnsigned(v8::Isolate::GetCurrent(), num)
-#define SWIGV8_NUMBER_NEW(num) v8::Number::New(v8::Isolate::GetCurrent(), num)
-#define SWIGV8_OBJECT_NEW() v8::Object::New(v8::Isolate::GetCurrent())
-#define SWIGV8_UNDEFINED() v8::Undefined(v8::Isolate::GetCurrent())
-#define SWIGV8_ARRAY v8::Local<v8::Array>
-#define SWIGV8_FUNCTION_TEMPLATE v8::Local<v8::FunctionTemplate>
-#define SWIGV8_OBJECT v8::Local<v8::Object>
-#define SWIGV8_OBJECT_TEMPLATE v8::Local<v8::ObjectTemplate>
-#define SWIGV8_OBJECT_TEMPLATE_NEW() v8::ObjectTemplate::New(v8::Isolate::GetCurrent())
-#define SWIGV8_VALUE v8::Local<v8::Value>
-#define SWIGV8_NULL() v8::Null(v8::Isolate::GetCurrent())
-#define SWIGV8_ARRAY_GET(array, index) (array)->Get(SWIGV8_CURRENT_CONTEXT(), index).ToLocalChecked()
-#define SWIGV8_ARRAY_SET(array, index, value) SWIGV8_MAYBE_CHECK((array)->Set(SWIGV8_CURRENT_CONTEXT(), index, value))
-
-#define SWIGV8_SET_CLASS_TEMPL(class_templ, class) class_templ.Reset(v8::Isolate::GetCurrent(), class);
-
-#define SWIGV8_TO_OBJECT(handle) (handle)->ToObject(SWIGV8_CURRENT_CONTEXT()).ToLocalChecked()
-#define SWIGV8_TO_STRING(handle) (handle)->ToString(SWIGV8_CURRENT_CONTEXT()).ToLocalChecked()
-#define SWIGV8_NUMBER_VALUE(handle) (handle)->NumberValue(SWIGV8_CURRENT_CONTEXT()).ToChecked()
-#define SWIGV8_INTEGER_VALUE(handle) (handle)->IntegerValue(SWIGV8_CURRENT_CONTEXT()).ToChecked()
-#define SWIGV8_WRITE_UTF8(handle, buffer, len) (handle)->WriteUtf8(v8::Isolate::GetCurrent(), buffer, len)
-#define SWIGV8_UTF8_LENGTH(handle) (handle)->Utf8Length(v8::Isolate::GetCurrent())
-#define SWIGV8_OBJECT_TEMPLATE_INSTACE(tmpl) tmpl->NewInstance(SWIGV8_CURRENT_CONTEXT()).ToLocalChecked();
-#define SWIGV8_BOOLEAN_VALUE(handle) (handle)->BooleanValue(v8::Isolate::GetCurrent())
-
-/* ---------------------------------------------------------------------------
- * Error handling
- *
- * ---------------------------------------------------------------------------*/
-
-#define SWIG_Error(code, msg)     SWIGV8_ErrorHandler.error(code, msg)
-#define SWIG_exception(code, msg) do { SWIGV8_ErrorHandler.error(code, msg); SWIG_fail; } while (0)
-#define SWIG_fail                 goto fail
-#define SWIGV8_OVERLOAD false
-
-SWIGINTERN void SWIG_V8_Raise(const char *msg) {
-  SWIGV8_THROW_EXCEPTION(v8::Exception::Error(SWIGV8_STRING_NEW(msg)));
+SWIGRUNTIME bool SWIG_check_num_args(const char *func_name, int num_args, int max_args, int min_args, int varargs) {
+  if (num_args > max_args && !varargs)
+    error("function %s takes at most %i arguments", func_name, max_args);
+  else if (num_args < min_args)
+    error("function %s requires at least %i arguments", func_name, min_args);
+  else
+    return true;
+  return false;
 }
 
-SWIGINTERN void SWIG_V8_Raise(SWIGV8_VALUE obj, const char *msg) {
-  SWIGV8_THROW_EXCEPTION(v8::Exception::Error(SWIGV8_TO_STRING(obj)));
+SWIGRUNTIME octave_value_list *SWIG_Octave_AppendOutput(octave_value_list *ovl, const octave_value &ov) {
+  ovl->append(ov);
+  return ovl;
 }
 
-
-/*
-  Note: There are two contexts for handling errors.
-  A static V8ErrorHandler is used in not overloaded methods.
-  For overloaded methods the throwing type checking mechanism is used
-  during dispatching. As V8 exceptions can not be reset properly
-  the trick is to use a dynamic ErrorHandler with same local name as the global
-  one.
-
-  - See definition of SWIG_Error above.
-  - See code templates 'JS_function_dispatcher', 'JS_functionwrapper_overload',
-    and 'JS_function_dispatch_case' in javascriptcode.swg
-
-*/
-class V8ErrorHandler {
-public:
-  virtual ~V8ErrorHandler() {}
-  virtual void error(int code, const char *msg) {
-    SWIG_V8_Raise(msg);
+SWIGRUNTIME octave_value SWIG_ErrorType(int code) {
+  switch (code) {
+  case SWIG_MemoryError:
+    return "SWIG_MemoryError";
+  case SWIG_IOError:
+    return "SWIG_IOError";
+  case SWIG_RuntimeError:
+    return "SWIG_RuntimeError";
+  case SWIG_IndexError:
+    return "SWIG_IndexError";
+  case SWIG_TypeError:
+    return "SWIG_TypeError";
+  case SWIG_DivisionByZero:
+    return "SWIG_DivisionByZero";
+  case SWIG_OverflowError:
+    return "SWIG_OverflowError";
+  case SWIG_SyntaxError:
+    return "SWIG_SyntaxError";
+  case SWIG_ValueError:
+    return "SWIG_ValueError";
+  case SWIG_SystemError:
+    return "SWIG_SystemError";
+  case SWIG_AttributeError:
+    return "SWIG_AttributeError";
+  case SWIG_NullReferenceError:
+    return "SWIG_NullReferenceError";
   }
-};
-// this is used in usually
-SWIGRUNTIME V8ErrorHandler SWIGV8_ErrorHandler;
+  return "SWIG unknown error";
+}
 
-// instances of this are used in overloaded functions
-class OverloadErrorHandler: public V8ErrorHandler {
-public:
-  virtual void error(int code, const char *msg) {
-    err = v8::Exception::Error(SWIGV8_STRING_NEW(msg));
-    if(code != SWIG_TypeError) {
-        SWIGV8_THROW_EXCEPTION(err);
+SWIGRUNTIME octave_value SWIG_Error(int code, const char *msg) {
+  octave_value type(SWIG_ErrorType(code));
+  std::string r = msg;
+  r += " (" + type.string_value() + ")";
+  error("%s", r.c_str());
+  return octave_value(r);
+}
+
+#define SWIG_fail                                       goto fail
+
+#define SWIG_Octave_ConvertPtr(obj, pptr, type, flags)  SWIG_Octave_ConvertPtrAndOwn(obj, pptr, type, flags, 0)
+#define SWIG_ConvertPtr(obj, pptr, type, flags)         SWIG_Octave_ConvertPtr(obj, pptr, type, flags)
+#define SWIG_ConvertPtrAndOwn(obj,pptr,type,flags,own)  SWIG_Octave_ConvertPtrAndOwn(obj, pptr, type, flags, own)
+#define SWIG_ConvertPtr(obj, pptr, type, flags)         SWIG_Octave_ConvertPtr(obj, pptr, type, flags)
+#define SWIG_NewPointerObj(ptr, type, flags)            SWIG_Octave_NewPointerObj(ptr, type, flags)
+#define swig_owntype                                    int
+
+#define SWIG_ConvertPacked(obj, ptr, sz, ty)            SWIG_Octave_ConvertPacked(obj, ptr, sz, ty)
+#define SWIG_NewPackedObj(ptr, sz, type)                SWIG_Octave_NewPackedObj(ptr, sz, type)
+
+#define SWIG_ConvertFunctionPtr(obj, pptr, type)        SWIG_ConvertPtr(obj, pptr, type, 0)
+#define SWIG_NewFunctionPtrObj(ptr, type)               SWIG_NewPointerObj(ptr, type, 0)
+
+#define SWIG_ConvertMember(obj, ptr, sz, ty)            SWIG_Octave_ConvertPacked(obj, ptr, sz, ty)
+#define SWIG_NewMemberObj(ptr, sz, type)                SWIG_Octave_NewPackedObj(ptr, sz, type)
+
+#define SWIG_GetModule(clientdata) SWIG_Octave_GetModule(clientdata)
+#define SWIG_SetModule(clientdata, pointer) SWIG_Octave_SetModule(clientdata,pointer);
+#define SWIG_MODULE_CLIENTDATA_TYPE void*
+
+#define Octave_Error_Occurred() 0
+#define SWIG_Octave_AddErrorMsg(msg) {;}
+
+SWIGRUNTIME swig_module_info *SWIG_Octave_GetModule(void *clientdata);
+SWIGRUNTIME void SWIG_Octave_SetModule(void *clientdata, swig_module_info *pointer);
+
+// For backward compatibility only
+#define SWIG_POINTER_EXCEPTION  0
+#define SWIG_arg_fail(arg)      0
+
+// Runtime API implementation
+
+typedef octave_value_list(*octave_func) (const octave_value_list &, int);
+class octave_swig_type;
+
+namespace Swig {
+
+#ifdef SWIG_DIRECTORS
+
+  class Director;
+
+  typedef std::map < void *, Director * > rtdir_map;
+  SWIGINTERN rtdir_map* get_rtdir_map();
+  SWIGINTERNINLINE void set_rtdir(void *vptr, Director *d);
+  SWIGINTERNINLINE void erase_rtdir(void *vptr);
+  SWIGINTERNINLINE Director *get_rtdir(void *vptr);
+
+  SWIGRUNTIME void swig_director_destroyed(octave_swig_type *self, Director *d);
+  SWIGRUNTIME octave_swig_type *swig_director_get_self(Director *d);
+  SWIGRUNTIME void swig_director_set_self(Director *d, octave_swig_type *self);
+
+#endif
+
+  SWIGRUNTIME octave_base_value *swig_value_ref(octave_swig_type *ost);
+  SWIGRUNTIME octave_swig_type *swig_value_deref(octave_value ov);
+  SWIGRUNTIME octave_swig_type *swig_value_deref(const octave_base_value &ov);
+}
+
+#ifdef SWIG_DIRECTORS
+SWIGRUNTIME void swig_acquire_ownership(void *vptr);
+SWIGRUNTIME void swig_acquire_ownership_array(void *vptr);
+SWIGRUNTIME void swig_acquire_ownership_obj(void *vptr, int own);
+#endif
+
+  struct swig_octave_member {
+    const char *name;
+    octave_func method;
+    octave_func get_method;
+    octave_func set_method;
+    int flags;			// 1 static, 2 global
+    const char *doc;
+    bool is_static() const {
+      return flags &1;
+    } bool is_global() const {
+      return flags &2;
     }
-  }
-  SWIGV8_VALUE err;
-};
-
-/* ---------------------------------------------------------------------------
- * Basic Proxy object
- *
- * ---------------------------------------------------------------------------*/
-
-// Note: to trigger the v8 gc more often one can tell v8 about the memory consumption
-// TODO: we could add a v8 specific parameter to control this value
-#define SWIGV8_AVG_OBJ_SIZE 1000
-
-class SWIGV8_Proxy {
-public:
-  SWIGV8_Proxy(): swigCMemOwn(false), swigCObject(0), info(0) {
-    SWIGV8_ADJUST_MEMORY(SWIGV8_AVG_OBJ_SIZE);
   };
 
-  ~SWIGV8_Proxy() {
-    handle.ClearWeak();
-    handle.Reset();
+  struct swig_octave_class {
+    const char *name;
+    swig_type_info **type;
+    int director;
+    octave_func constructor;
+    const char *constructor_doc;
+    octave_func destructor;
+    const swig_octave_member *members;
+    const char **base_names;
+    const swig_type_info **base;
+  };
 
-    SWIGV8_ADJUST_MEMORY(-SWIGV8_AVG_OBJ_SIZE);
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+  // in Octave 4.4 behaviour of octave_builtin() appears to have changed and 'self' argument is no longer passed
+  // to function (maybe because this is now a 'method'??) so need to create our own octave_function subclass
+#define SWIG_OCTAVE_BOUND_FUNC(func, args) octave_value(new octave_swig_bound_func(func, args))
+  class octave_swig_bound_func : public octave_function {
+  public:
+
+    octave_swig_bound_func(void) : octave_function(), method(0), first_args()
+      { }
+
+    octave_swig_bound_func(octave_function* _method, octave_value_list _first_args)
+      : octave_function("", ""), method(_method), first_args(_first_args)
+      { }
+
+    octave_swig_bound_func(const octave_swig_bound_func& f) = delete;
+
+    octave_swig_bound_func& operator= (const octave_swig_bound_func& f) = delete;
+
+    ~octave_swig_bound_func(void) = default;
+
+    bool is_function(void) const { return true; }
+
+    octave_function* function_value(bool = false) { return this; }
+
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+    octave_value_list call(octave::tree_evaluator& tw, int nargout = 0, const octave_value_list& args = octave_value_list()) {
+      return execute(tw,nargout,args);
+    }
+#endif
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+    octave_value_list execute(octave::tree_evaluator& tw, int nargout = 0, const octave_value_list& args = octave_value_list()) {
+#else
+    octave_value_list call(octave::tree_evaluator& tw, int nargout = 0, const octave_value_list& args = octave_value_list()) {
+#endif
+      octave_value_list all_args;
+      all_args.append(first_args);
+      all_args.append(args);
+      return method->call(tw, nargout, all_args);
+    }
+
+    octave_value subsref(const std::string &ops, const std::list < octave_value_list > &idx) {
+      octave_value_list ovl = subsref(ops, idx, 1);
+      return ovl.length() ? ovl(0) : octave_value();
+    }
+
+    octave_value_list subsref(const std::string &ops, const std::list < octave_value_list > &idx, int nargout) {
+      assert(ops.size() > 0);
+      assert(ops.size() == idx.size());
+      if (ops != "(")
+        error("invalid function call");
+      octave::tree_evaluator& tw = octave::interpreter::the_interpreter()->get_evaluator();
+      return call(tw, nargout, *idx.begin());
+    }
+
+  protected:
+
+    octave_function* method;
+    octave_value_list first_args;
+
+    std::set<std::string> dispatch_classes;
+
+  };
+#else
+#define SWIG_OCTAVE_BOUND_FUNC(func, args) octave_value(func)
+#endif
+
+  // octave_swig_type plays the role of both the shadow class and the class 
+  // representation within Octave, since there is no support for classes.
+  //
+  // These should really be decoupled, with the class support added to Octave
+  // and the shadow class given by an m-file script. That would dramatically 
+  // reduce the runtime complexity, and be more in line with other modules.
+
+  class octave_swig_type:public octave_base_value {
+    struct cpp_ptr {
+      void *ptr;
+      bool destroyed;
+      cpp_ptr(void *_ptr):ptr(_ptr), destroyed(false) {
+      }};
+    typedef std::pair < const swig_type_info *, cpp_ptr > type_ptr_pair;
+
+    mutable swig_module_info *module;
+
+    const swig_type_info *construct_type;	// type of special type object
+    std::vector < type_ptr_pair > types;	// our c++ base classes
+    int thisown; // whether we call c++ destructors when we die
+
+    typedef std::pair < const swig_octave_member *, octave_value > member_value_pair;
+    typedef std::map < std::string, member_value_pair > member_map;
+    member_map members;
+    bool always_static;
+
+    const swig_octave_member *find_member(const swig_type_info *type, const std::string &name) {
+      if (!type->clientdata)
+	return 0;
+      swig_octave_class *c = (swig_octave_class *) type->clientdata;
+      const swig_octave_member *m;
+      for (m = c->members; m->name; ++m)
+	if (m->name == name)
+	  return m;
+      for (int j = 0; c->base_names[j]; ++j) {
+	if (!c->base[j]) {
+	  if (!module)
+	    module = SWIG_GetModule(0);
+	  assert(module);
+	  c->base[j] = SWIG_MangledTypeQueryModule(module, module, c->base_names[j]);
+	}
+	if (!c->base[j])
+	  return 0;
+	if ((m = find_member(c->base[j], name)))
+	  return m;
+      }
+      return 0;
+    }
+
+    member_value_pair *find_member(const std::string &name, bool insert_if_not_found) {
+      member_map::iterator it = members.find(name);
+      if (it != members.end())
+	return &it->second;
+      const swig_octave_member *m;
+      for (unsigned int j = 0; j < types.size(); ++j)
+	if ((m = find_member(types[j].first, name)))
+	  return &members.insert(std::make_pair(name, std::make_pair(m, octave_value()))).first->second;
+      if (!insert_if_not_found)
+	return 0;
+      return &members[name];
+    }
+
+    const swig_type_info *find_base(const std::string &name, const swig_type_info *base) {
+      if (!base) {
+	for (unsigned int j = 0; j < types.size(); ++j) {
+	  assert(types[j].first->clientdata);
+	  swig_octave_class *cj = (swig_octave_class *) types[j].first->clientdata;
+	  if (cj->name == name)
+	    return types[j].first;
+	}
+	return 0;
+      }
+      assert(base->clientdata);
+      swig_octave_class *c = (swig_octave_class *) base->clientdata;
+      for (int j = 0; c->base_names[j]; ++j) {
+	if (!c->base[j]) {
+	  if (!module)
+	    module = SWIG_GetModule(0);
+	  assert(module);
+	  c->base[j] = SWIG_MangledTypeQueryModule(module, module, c->base_names[j]);
+	}
+	if (!c->base[j])
+	  return 0;
+	assert(c->base[j]->clientdata);
+	swig_octave_class *cj = (swig_octave_class *) c->base[j]->clientdata;
+	if (cj->name == name)
+	  return c->base[j];
+      }
+      return 0;
+    }
+
+    void load_members(const swig_octave_class* c,member_map& out) const {
+      for (const swig_octave_member *m = c->members; m->name; ++m) {
+	if (out.find(m->name) == out.end())
+	  out.insert(std::make_pair(m->name, std::make_pair(m, octave_value())));
+      }
+      for (int j = 0; c->base_names[j]; ++j) {
+	if (!c->base[j]) {
+	  if (!module)
+	    module = SWIG_GetModule(0);
+	  assert(module);
+	  c->base[j] = SWIG_MangledTypeQueryModule(module, module, c->base_names[j]);
+	}
+	if (!c->base[j])
+	  continue;
+	assert(c->base[j]->clientdata);
+	const swig_octave_class *cj =
+	  (const swig_octave_class *) c->base[j]->clientdata;
+	load_members(cj,out);
+      }
+    }
+
+    void load_members(member_map& out) const {
+      out=members;
+      for (unsigned int j = 0; j < types.size(); ++j)
+	if (types[j].first->clientdata)
+	  load_members((const swig_octave_class *) types[j].first->clientdata, out);
+    }
+
+    octave_value_list member_invoke(member_value_pair *m, const octave_value_list &args, int nargout) {
+      if (m->second.is_defined())
+	return m->second.subsref("(", std::list < octave_value_list > (1, args), nargout);
+      else if (m->first && m->first->method)
+	return m->first->method(args, nargout);
+      error("member not defined or not invocable");
+      return octave_value_list();
+    }
+
+    bool dispatch_unary_op(const std::string &symbol, octave_value &ret) const {
+      octave_swig_type *nc_this = const_cast < octave_swig_type *>(this);
+      member_value_pair *m = nc_this->find_member(symbol, false);
+      if (!m || m->first->is_static() || m->first->is_global())
+	return false;
+      octave_value_list args;
+      args.append(nc_this->as_value());
+      octave_value_list argout(nc_this->member_invoke(m, args, 1));
+      if (argout.length() < 1)
+	return false;
+      ret = argout(0);
+      return true;
+    }
+
+    bool dispatch_binary_op(const std::string &symbol, const octave_base_value &rhs, octave_value &ret) const {
+      octave_swig_type *nc_this = const_cast < octave_swig_type *>(this);
+      member_value_pair *m = nc_this->find_member(symbol, false);
+      if (!m || m->first->is_static() || m->first->is_global())
+	return false;
+      octave_value_list args;
+      args.append(nc_this->as_value());
+      args.append(make_value_hack(rhs));
+      octave_value_list argout(nc_this->member_invoke(m, args, 1));
+      if (argout.length() < 1)
+	return false;
+      ret = argout(0);
+      return true;
+    }
+
+    bool dispatch_index_op(const std::string &symbol, const octave_value_list &rhs, octave_value_list &ret) const {
+      octave_swig_type *nc_this = const_cast < octave_swig_type *>(this);
+      member_value_pair *m = nc_this->find_member(symbol, false);
+      if (!m || m->first->is_static() || m->first->is_global())
+	return false;
+      octave_value_list args;
+      args.append(nc_this->as_value());
+      args.append(rhs);
+      octave_value_list argout(nc_this->member_invoke(m, args, 1));
+      if (argout.length() >= 1)
+	ret = argout(0);
+      return true;
+    }
+
+    octave_value_list member_deref(member_value_pair *m, const octave_value_list &args) {
+      if (m->second.is_defined()) {
+        if (m->second.is_function() || m->second.is_function_handle()) {
+          return SWIG_OCTAVE_BOUND_FUNC(m->second.function_value(), args);
+        } else {
+          return m->second;
+        }
+      } else if (m->first) {
+	if (m->first->get_method)
+	  return m->first->get_method(args, 1);
+	else if (m->first->method)
+          return SWIG_OCTAVE_BOUND_FUNC(new octave_builtin(m->first->method), args);
+      }
+      error("undefined member");
+      return octave_value_list();
+    }
+
+    static octave_value make_value_hack(const octave_base_value &x) {
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+      ((octave_swig_type &) x).m_count++;
+#else
+      ((octave_swig_type &) x).count++;
+#endif
+      return octave_value((octave_base_value *) &x);
+    }
+
+    octave_swig_type(const octave_swig_type &x);
+    octave_swig_type &operator=(const octave_swig_type &rhs);
+  public:
+
+    octave_swig_type(void *_ptr = 0, const swig_type_info *_type = 0, int _own = 0,
+		     bool _always_static = false)
+      :	module(0), construct_type(_ptr ? 0 : _type), thisown(_own), 
+      always_static(_always_static) {
+      if (_type || _ptr)
+	types.push_back(std::make_pair(_type, _ptr));
+#ifdef SWIG_DIRECTORS
+      if (_ptr) {
+	Swig::Director *d = Swig::get_rtdir(_ptr);
+	if (d)
+	  Swig::swig_director_set_self(d, this);
+      }
+#endif
+    }
+
+    ~octave_swig_type() {
+      if (thisown) {
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+	++m_count;
+#else
+	++count;
+#endif
+	for (unsigned int j = 0; j < types.size(); ++j) {
+	  if (!types[j].first || !types[j].first->clientdata)
+	    continue;
+	  swig_octave_class *c = (swig_octave_class *) types[j].first->clientdata;
+	  if (c->destructor && !types[j].second.destroyed && types[j].second.ptr) {
+	    c->destructor(as_value(), 0);
+	  }
+	}
+      }
+#ifdef SWIG_DIRECTORS
+      for (unsigned int j = 0; j < types.size(); ++j)
+	Swig::erase_rtdir(types[j].second.ptr);
+#endif
+    }
+
+    dim_vector dims(void) const {
+      octave_value out;
+      if (!dispatch_unary_op("__dims__", out))
+        return dim_vector(1,1);
+
+      // Return value should be cell or matrix of integers
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+      if (out.iscell()) {
+#else
+      if (out.is_cell()) {
+#endif
+        const Cell & c=out.cell_value();
+        int ndim = c.rows();
+        if (ndim==1 && c.columns()!=1) ndim = c.columns();
+
+        dim_vector d;
+        d.resize(ndim < 2 ? 2 : ndim);
+        d(0) = d(1) = 1;
+
+        // Fill in dim_vector 
+        for (int k=0;k<ndim;k++) {
+          const octave_value& obj = c(k);
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+          try {
+            d.elem(k) = obj.int_value();
+          }
+          catch (octave::execution_exception& oee) {
+            // __dims__ should return a cell filled with integers
+            return dim_vector(1,1);
+          }
+#else
+          d.elem(k) = obj.int_value();
+          
+          // __dims__ should return a cell filled with integers
+          if (error_state) return dim_vector(1,1);
+#endif
+        }
+        return d;
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+      } else if (out.is_matrix_type() || out.isnumeric() ) {
+#else
+      } else if (out.is_matrix_type() || out.is_numeric_type() ) {
+#endif
+        if (out.rows()==1 || out.columns()==1) {
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+           Array<int> a;
+           try {
+             a = out.int_vector_value();
+           }
+           catch (octave::execution_exception& oee) {
+             return dim_vector(1,1);
+           }
+#else
+           Array<int> a = out.int_vector_value();
+           if (error_state) return dim_vector(1,1);
+#endif
+           dim_vector d;
+           d.resize(a.numel() < 2 ? 2 : a.numel());
+           d(0) = d(1) = 1;
+           for (int k=0;k<a.numel();k++) {
+              d.elem(k) = a(k);
+           }
+           return d;
+        } else {
+          return dim_vector(1,1);
+        }
+      } else {
+        return dim_vector(1,1);
+      }
+    }
+
+    octave_value as_value() {
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+      ++m_count;
+#else
+      ++count;
+#endif
+      return Swig::swig_value_ref(this);
+    }
+
+    void incref() {
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+      ++m_count;
+#else
+      ++count;
+#endif
+    }
+
+    void decref() {
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+      if (!--m_count)
+#else
+      if (!--count)
+#endif
+	delete this;
+    }
+
+    size_t swig_this() const {
+      if (!types.size())
+	return (size_t) this;
+      return (size_t) types[0].second.ptr;
+    }
+    const char* help_text() const {
+      if (!types.size())
+	return 0;
+      if (!types[0].first->clientdata)
+	return 0;
+      swig_octave_class *c = (swig_octave_class *) types[0].first->clientdata;
+      return c->constructor_doc;
+    }
+
+    std::string swig_type_name() const {
+      // * need some way to manually name subclasses.
+      // * eg optional first arg to subclass(), or named_subclass()
+      std::string ret;
+      for (unsigned int j = 0; j < types.size(); ++j) {
+	if (j)
+	  ret += "_";
+	if (types[j].first->clientdata) {
+	  swig_octave_class *c = (swig_octave_class *) types[j].first->clientdata;
+	  ret += c->name;
+	} else
+	  ret += types[j].first->name;
+      }
+      return ret;
+    }
+
+    void merge(octave_swig_type &rhs) {
+      rhs.thisown = 0;
+      for (unsigned int j = 0; j < rhs.types.size(); ++j) {
+	assert(!rhs.types[j].second.destroyed);
+#ifdef SWIG_DIRECTORS
+	Swig::Director *d = Swig::get_rtdir(rhs.types[j].second.ptr);
+	if (d)
+	  Swig::swig_director_set_self(d, this);
+#endif
+      }
+      types.insert(types.end(), rhs.types.begin(), rhs.types.end());
+      members.insert(rhs.members.begin(), rhs.members.end());
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+      assign(rhs.swig_type_name(), rhs.as_value());
+#else
+      rhs.types.clear();
+      rhs.members.clear();
+#endif
+    }
+
+    typedef member_map::const_iterator swig_member_const_iterator;
+    swig_member_const_iterator swig_members_begin() { return members.begin(); }
+    swig_member_const_iterator swig_members_end() { return members.end(); }
+
+    int cast(void **vptr, swig_type_info *type, int *own, int flags) {
+      int res = SWIG_ERROR;
+      int clear_pointer = 0;
+
+      if (own)
+	*own = 0;
+      if (((flags & SWIG_POINTER_RELEASE) == SWIG_POINTER_RELEASE) && !thisown) {
+	return SWIG_ERROR_RELEASE_NOT_OWNED;
+      } else {
+	if (own)
+	  *own = *own | thisown;
+	if (flags & SWIG_POINTER_DISOWN) {
+	  thisown = 0;
+	}
+	if (flags & SWIG_POINTER_CLEAR) {
+	  clear_pointer = 1;
+	}
+      }
+
+      if (!type && types.size()) {
+	if (vptr) {
+          *vptr = types[0].second.ptr;
+	  if (clear_pointer)
+	    types[0].second.ptr = 0;
+        }
+        return SWIG_OK;
+      }
+      for (unsigned int j = 0; j < types.size(); ++j)
+	if (type == types[j].first) {
+	  if (vptr) {
+            *vptr = types[j].second.ptr;
+	    if (clear_pointer)
+	      types[j].second.ptr = 0;
+	  }
+          return SWIG_OK;
+        }
+      for (unsigned int j = 0; j < types.size(); ++j) {
+	swig_cast_info *tc = SWIG_TypeCheck(types[j].first->name, type);
+	if (!tc)
+	  continue;
+	if (vptr) {
+	  int newmemory = 0;
+	  *vptr = SWIG_TypeCast(tc, types[j].second.ptr, &newmemory);
+	  if (newmemory == SWIG_CAST_NEW_MEMORY) {
+	    assert(own); /* badly formed typemap which will lead to a memory leak - it must set and use own to delete *ptr */
+	    if (own)
+	      *own = *own | SWIG_CAST_NEW_MEMORY;
+	  }
+	  if (clear_pointer)
+	    types[j].second.ptr = 0;
+        }
+        res = SWIG_OK;
+        break;
+      }
+      return res;
+    }
+
+    bool is_owned() const {
+      return thisown;
+    }
+
+#ifdef SWIG_DIRECTORS
+    void director_destroyed(Swig::Director *d) {
+      bool found = false;
+      for (unsigned int j = 0; j < types.size(); ++j) {
+	Swig::Director *dj = Swig::get_rtdir(types[j].second.ptr);
+	if (dj == d) {
+	  types[j].second.destroyed = true;
+	  found = true;
+	}
+      }
+      assert(found);
+    }
+#endif
+
+    void assign(const std::string &name, const octave_value &ov) {
+      members[name] = std::make_pair((const swig_octave_member *) 0, ov);
+    }
+
+    void assign(const std::string &name, const swig_octave_member *m) {
+      members[name] = std::make_pair(m, octave_value());
+    }
+
+    octave_base_value *clone() const {
+      // pass-by-value is probably not desired, and is harder;
+      // requires calling copy constructors of contained types etc.
+      assert(0);
+      *(int *) 0 = 0;
+      return 0;
+    }
+
+    octave_base_value *empty_clone() const {
+      return new octave_swig_type();
+    }
+
+    bool is_defined() const {
+      return true;
+    }
+
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+    virtual bool isstruct() const {
+#else
+    virtual bool is_map() const {
+#endif
+      return true;
+    }
+
+    virtual octave_value subsref(const std::string &ops, const std::list < octave_value_list > &idx) {
+      octave_value_list ovl = subsref(ops, idx, 1);
+      return ovl.length()? ovl(0) : octave_value();
+    }
+
+    virtual octave_value_list subsref(const std::string &ops, const std::list < octave_value_list > &idx, int nargout) {
+      assert(ops.size() > 0);
+      assert(ops.size() == idx.size());
+
+      std::list < octave_value_list >::const_iterator idx_it = idx.begin();
+      int skip = 0;
+      octave_value_list sub_ovl;
+
+      // constructor invocation
+      if (ops[skip] == '(' && construct_type) {
+	assert(construct_type->clientdata);
+	swig_octave_class *c = (swig_octave_class *) construct_type->clientdata;
+	if (!c->constructor) {
+	  error("cannot create instance");
+	  return octave_value_list();
+	}
+	octave_value_list args;
+	if (c->director)
+	  args.append(Swig::swig_value_ref(new octave_swig_type(this, 0, 0)));
+	args.append(*idx_it++);
+	++skip;
+	sub_ovl = c->constructor(args, nargout);
+      }
+      // member dereference or invocation
+      else if (ops[skip] == '.') {
+	std::string subname;
+	const swig_type_info *base = 0;	// eg, a.base.base_cpp_mem
+	for (;;) {
+	  octave_value_list subname_ovl(*idx_it++);
+	  ++skip;
+	  assert(subname_ovl.length() == 1 && subname_ovl(0).is_string());
+	  subname = subname_ovl(0).string_value();
+
+	  const swig_type_info *next_base = find_base(subname, base);
+	  if (!next_base || skip >= (int) ops.size() || ops[skip] != '.')
+	    break;
+	  base = next_base;
+	}
+
+	member_value_pair tmp, *m = &tmp;
+	if (!base || !(m->first = find_member(base, subname)))
+	  m = find_member(subname, false);
+	if (!m) {
+	  error("member not found");
+	  return octave_value_list();
+	}
+
+	octave_value_list args;
+	if (!always_static &&
+	    (!m->first || (!m->first->is_static() && !m->first->is_global())))
+	  args.append(as_value());
+	if (skip < (int) ops.size() && ops[skip] == '(' && 
+	    ((m->first && m->first->method) || m->second.is_function() || 
+	     m->second.is_function_handle())) {
+	  args.append(*idx_it++);
+	  ++skip;
+	  sub_ovl = member_invoke(m, args, nargout);
+	} else {
+	  sub_ovl = member_deref(m, args);
+	}
+      }
+      // index operator
+      else {
+	if (ops[skip] == '(' || ops[skip] == '{') {
+	  const char *op_name = ops[skip] == '(' ? "__paren__" : "__brace__";
+	  octave_value_list args;
+	  args.append(*idx_it++);
+	  ++skip;
+	  if (!dispatch_index_op(op_name, args, sub_ovl)) {
+	    error("error evaluating index operator");
+	    return octave_value_list();
+	  }
+	} else {
+	  error("unsupported subsref");
+	  return octave_value_list();
+	}
+      }
+
+      if (skip >= (int) ops.size())
+	return sub_ovl;
+      if (sub_ovl.length() < 1) {
+	error("bad subs ref");
+	return octave_value_list();
+      }
+      return sub_ovl(0).next_subsref(nargout, ops, idx, skip);
+    }
+
+    octave_value subsasgn(const std::string &ops, const std::list < octave_value_list > &idx, const octave_value &rhs) {
+      assert(ops.size() > 0);
+      assert(ops.size() == idx.size());
+
+      std::list < octave_value_list >::const_iterator idx_it = idx.begin();
+      int skip = 0;
+
+      if (ops.size() > 1) {
+	std::list < octave_value_list >::const_iterator last = idx.end();
+	--last;
+	std::list < octave_value_list > next_idx(idx.begin(), last);
+	octave_value next_ov = subsref(ops.substr(0, ops.size() - 1), next_idx);
+	next_ov.subsasgn(ops.substr(ops.size() - 1), std::list < octave_value_list > (1, *last), rhs);
+      }
+
+      else if (ops[skip] == '(' || ops[skip] == '{') {
+	const char *op_name = ops[skip] == '(' ? "__paren_asgn__" : "__brace_asgn__";
+	member_value_pair *m = find_member(op_name, false);
+	if (m) {
+	  octave_value_list args;
+	  args.append(as_value());
+	  args.append(*idx_it);
+	  args.append(rhs);
+	  member_invoke(m, args, 1);
+	} else
+	  error("%s member not found", op_name);
+      }
+
+      else if (ops[skip] == '.') {
+	octave_value_list subname_ovl(*idx_it++);
+	++skip;
+	assert(subname_ovl.length() == 1 &&subname_ovl(0).is_string());
+	std::string subname = subname_ovl(0).string_value();
+
+	member_value_pair *m = find_member(subname, true);
+	if (!m->first || !m->first->set_method) {
+	  m->first = 0;
+	  m->second = rhs;
+	} else if (m->first->set_method) {
+	  octave_value_list args;
+	  if (!m->first->is_static() && !m->first->is_global())
+	    args.append(as_value());
+	  args.append(rhs);
+	  m->first->set_method(args, 1);
+	} else
+	  error("member not assignable");
+      } else
+	error("unsupported subsasgn");
+
+      return as_value();
+    }
+
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+    virtual bool isobject() const {
+#else
+    virtual bool is_object() const {
+#endif
+      return true;
+    }
+
+    virtual bool is_string() const {
+      octave_swig_type *nc_this = const_cast < octave_swig_type *>(this);
+      return !!nc_this->find_member("__str__", false);
+    }
+
+    virtual std::string string_value(bool force = false) const {
+      octave_value ret;
+      if (!dispatch_unary_op("__str__", ret)) {
+        error("__str__ method not defined");
+        return std::string();
+      }
+      if (!ret.is_string()) {
+	error("__str__ method did not return a string");
+	return std::string();
+      }
+      return ret.string_value();
+    }
+
+    virtual double scalar_value(bool frc_str_conv = false) const {
+      octave_value ret;
+      if (!dispatch_unary_op("__float__", ret)) {
+        error("__float__ method not defined");
+      }
+      return ret.scalar_value();
+    }
+
+#if SWIG_OCTAVE_PREREQ(4,2,0)
+    virtual octave_value as_double(void) const {
+      octave_value ret;
+      if (!dispatch_unary_op("__float__", ret)) {
+        error("__float__ method not defined");
+      }
+      return ret.as_double();
+    }
+
+    virtual octave_value as_single(void) const {
+      octave_value ret;
+      if (!dispatch_unary_op("__float__", ret)) {
+        error("__float__ method not defined");
+      }
+      return ret.as_single();
+    }
+#endif
+
+#if SWIG_OCTAVE_PREREQ(3,8,0)
+    virtual octave_value map(octave_base_value::unary_mapper_t umap) const {
+      const std::string opname = std::string("__") + octave_base_value::get_umap_name(umap) + std::string("__");
+      octave_value ret;
+      if (!dispatch_unary_op(opname, ret)) {
+        error("%s", (opname + std::string(" method not found")).c_str());
+        return octave_value();
+      }
+      return ret;
+    }
+#endif
+
+#if SWIG_OCTAVE_PREREQ(3,3,52)
+    virtual octave_map map_value() const {
+      return octave_map();
+    }
+#else
+    virtual Octave_map map_value() const {
+      return Octave_map();
+    }
+#endif
+
+    virtual string_vector map_keys() const {
+      member_map tmp;
+      load_members(tmp);
+
+      string_vector keys(tmp.size());
+      int k = 0;
+      for (member_map::iterator it = tmp.begin(); it != tmp.end(); ++it)
+	keys(k++) = it->first;
+
+      return keys;
+    }
+
+    virtual bool save_ascii (std::ostream& os) {
+      return true;
+    }
+
+    virtual bool load_ascii (std::istream& is) {
+      return true;
+    }
+
+    virtual bool save_binary (std::ostream& os, bool& save_as_floats) {
+      return true;
+    }
+
+    virtual bool load_binary (std::istream& is, bool swap, 
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+			      octave::mach_info::float_format fmt) {
+#else
+                             oct_mach_info::float_format fmt) {
+#endif
+      return true;
+    }
+
+#if defined (HAVE_HDF5)
+# if SWIG_OCTAVE_PREREQ(4,0,0)
+    virtual bool
+      save_hdf5 (octave_hdf5_id loc_id, const char *name, bool save_as_floats) {
+      return true;
+    }
+
+    virtual bool
+      load_hdf5 (octave_hdf5_id loc_id, const char *name, bool have_h5giterate_bug) {
+      return true;
+    }
+# else
+    virtual bool
+      save_hdf5 (hid_t loc_id, const char *name, bool save_as_floats) {
+      return true;
+    }
+
+    virtual bool
+      load_hdf5 (hid_t loc_id, const char *name, bool have_h5giterate_bug) {
+      return true;
+    }
+# endif
+#endif
+
+    virtual octave_value convert_to_str(bool pad = false, bool force = false, char type = '"') const {
+      return string_value();
+    }
+
+    virtual octave_value convert_to_str_internal(bool pad, bool force, char type) const {
+      return string_value();
+    }
+
+    static bool dispatch_global_op(const std::string &symbol, const octave_value_list &args, octave_value &ret) {
+      // we assume that SWIG_op_prefix-prefixed functions are installed in global namespace
+      // (rather than any module namespace).
+
+      octave_function *fcn = is_valid_function(symbol, std::string(), false);
+      if (!fcn)
+	return false;
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+      octave::tree_evaluator& tw = octave::interpreter::the_interpreter()->get_evaluator();
+      octave_value_list retval = fcn->call(tw, 1, args);
+      if (retval.length() == 1)
+        ret = retval(0);
+#else
+      ret = fcn->do_multi_index_op(1, args)(0);
+#endif
+      return true;
+    }
+
+    static octave_value dispatch_unary_op(const octave_base_value &x, const char *op_name) {
+      octave_swig_type *ost = Swig::swig_value_deref(x);
+      assert(ost);
+
+      octave_value ret;
+      if (ost->dispatch_unary_op(std::string("__") + op_name + std::string("__"), ret))
+	return ret;
+      std::string symbol = SWIG_op_prefix + ost->swig_type_name() + "_" + op_name;
+      octave_value_list args;
+      args.append(make_value_hack(x));
+      if (dispatch_global_op(symbol, args, ret))
+	return ret;
+
+      error("could not dispatch unary operator");
+      return octave_value();
+    }
+
+    static octave_value dispatch_binary_op(const octave_base_value &lhs, const octave_base_value &rhs, const char *op_name) {
+      octave_swig_type *lhs_ost = Swig::swig_value_deref(lhs);
+      octave_swig_type *rhs_ost = Swig::swig_value_deref(rhs);
+
+      octave_value ret;
+      if (lhs_ost && lhs_ost->dispatch_binary_op(std::string("__") + op_name + std::string("__"), rhs, ret))
+	return ret;
+      if (rhs_ost) {
+        if (strlen(op_name) == 2  && (op_name[1] == 't' || op_name[1] == 'e')) {
+          if (op_name[0] == 'l' && rhs_ost->dispatch_binary_op(std::string("__g") + op_name[1] + std::string("__"), lhs, ret))
+            return ret;
+          if (op_name[0] == 'g' && rhs_ost->dispatch_binary_op(std::string("__l") + op_name[1] + std::string("__"), lhs, ret))
+            return ret;
+        }
+        if (rhs_ost->dispatch_binary_op(std::string("__r") + op_name + std::string("__"), lhs, ret))
+          return ret;
+      }
+
+      std::string symbol;
+      octave_value_list args;
+      args.append(make_value_hack(lhs));
+      args.append(make_value_hack(rhs));
+
+      symbol = SWIG_op_prefix;
+      symbol += lhs_ost ? lhs_ost->swig_type_name() : lhs.type_name();
+      symbol += "_";
+      symbol += op_name;
+      symbol += "_";
+      symbol += rhs_ost ? rhs_ost->swig_type_name() : rhs.type_name();
+      if (dispatch_global_op(symbol, args, ret))
+	return ret;
+
+      symbol = SWIG_op_prefix;
+      symbol += lhs_ost ? lhs_ost->swig_type_name() : lhs.type_name();
+      symbol += "_";
+      symbol += op_name;
+      symbol += "_";
+      symbol += "any";
+      if (dispatch_global_op(symbol, args, ret))
+	return ret;
+
+      symbol = SWIG_op_prefix;
+      symbol += "any";
+      symbol += "_";
+      symbol += op_name;
+      symbol += "_";
+      symbol += rhs_ost ? rhs_ost->swig_type_name() : rhs.type_name();
+      if (dispatch_global_op(symbol, args, ret))
+	return ret;
+
+      error("could not dispatch binary operator");
+      return octave_value();
+    }
+
+#if SWIG_OCTAVE_PREREQ(4,0,0)
+    void print(std::ostream &os, bool pr_as_read_syntax = false)
+#else
+    void print(std::ostream &os, bool pr_as_read_syntax = false) const
+#endif
+    {
+      if (is_string()) {
+	os << string_value();
+	return;
+      }
+
+      member_map tmp;
+      load_members(tmp);
+
+      indent(os);
+      os << "{"; newline(os);
+      increment_indent_level();
+      for (unsigned int j = 0; j < types.size(); ++j) {
+        indent(os);
+	if (types[j].first->clientdata) {
+	  const swig_octave_class *c = (const swig_octave_class *) types[j].first->clientdata;
+	  os << c->name << ", ptr = " << types[j].second.ptr; newline(os);
+	} else {
+	  os << types[j].first->name << ", ptr = " << types[j].second.ptr; newline(os);
+	}
+      }
+      for (member_map::const_iterator it = tmp.begin(); it != tmp.end(); ++it) {
+        indent(os);
+	if (it->second.first) {
+	  const char *objtype = it->second.first->method ? "method" : "variable";
+	  const char *modifier = (it->second.first->flags &1) ? "static " : (it->second.first->flags &2) ? "global " : "";
+	  os << it->second.first->name << " (" << modifier << objtype << ")"; newline(os);
+	  assert(it->second.first->name == it->first);
+	} else {
+	  os << it->first; newline(os);
+	}
+      }
+      decrement_indent_level();
+      indent(os);
+      os << "}"; newline(os);
+    }
+  };
+
+  // Octave tries hard to preserve pass-by-value semantics. Eg, assignments
+  // will call clone() via make_unique() if there is more than one outstanding 
+  // reference to the lhs, and forces the clone's reference count to 1 
+  // (so you can't just increment your own count and return this).
+  //
+  // One way to fix this (without modifying Octave) is to add a level of
+  // indirection such that clone copies ref-counted pointer and we keep 
+  // pass-by-ref semantics (which are more natural/expected for C++ bindings).
+  //
+  // Supporting both pass-by-{ref,value} and toggling via %feature/option 
+  // might be nice.
+
+  class octave_swig_ref:public octave_base_value {
+    octave_swig_type *ptr;
+  public:
+    octave_swig_ref(octave_swig_type *_ptr = 0)
+      :ptr(_ptr)
+      {
+        // Ensure type_id() is set correctly
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+        if (s_t_id == -1) {
+          s_t_id = octave_swig_ref::static_type_id();
+#else
+        if (t_id == -1) {
+          t_id = octave_swig_ref::static_type_id();
+#endif
+        }
+      }
+
+    ~octave_swig_ref()
+      { if (ptr) ptr->decref(); }
+
+    octave_swig_type *get_ptr() const
+      { return ptr; }
+
+    octave_base_value *clone() const
+      { if (ptr) ptr->incref(); return new octave_swig_ref(ptr); }
+
+    octave_base_value *empty_clone() const
+      { return new octave_swig_ref(0); }
+
+    dim_vector dims(void) const 
+      { return ptr->dims(); }
+
+    bool is_defined() const
+      { return ptr->is_defined(); }
+
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+    virtual bool isstruct() const
+      { return ptr->isstruct(); }
+#else
+    virtual bool is_map() const 
+      { return ptr->is_map(); }
+#endif
+
+    virtual octave_value subsref(const std::string &ops, const std::list < octave_value_list > &idx) 
+      { return ptr->subsref(ops, idx); }
+
+    virtual octave_value_list subsref(const std::string &ops, const std::list < octave_value_list > &idx, int nargout)
+      { return ptr->subsref(ops, idx, nargout); }
+
+    octave_value subsasgn(const std::string &ops, const std::list < octave_value_list > &idx, const octave_value &rhs)
+      { return ptr->subsasgn(ops, idx, rhs); }
+
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+    virtual bool isobject() const
+      { return ptr->isobject(); }
+#else
+    virtual bool is_object() const 
+      { return ptr->is_object(); }
+#endif
+
+    virtual bool is_string() const 
+      { return ptr->is_string(); }
+
+    virtual std::string string_value(bool force = false) const 
+      { return ptr->string_value(force); }
+
+    virtual double scalar_value(bool frc_str_conv = false) const
+      { return ptr->scalar_value(frc_str_conv); }
+
+#if SWIG_OCTAVE_PREREQ(4,2,0)
+    virtual octave_value as_double(void) const
+      { return ptr->as_double(); }
+
+    virtual octave_value as_single(void) const
+      { return ptr->as_single(); }
+#endif
+
+#if SWIG_OCTAVE_PREREQ(3,8,0)
+    virtual octave_value map(octave_base_value::unary_mapper_t umap) const
+      { return ptr->map(umap); }
+#endif
+
+#if SWIG_OCTAVE_PREREQ(3,3,52)
+    virtual octave_map map_value() const
+      { return ptr->map_value(); }
+#else
+    virtual Octave_map map_value() const
+      { return ptr->map_value(); }
+#endif
+
+    virtual string_vector map_keys() const
+      { return ptr->map_keys(); }
+
+    virtual bool save_ascii (std::ostream& os)
+      { return ptr->save_ascii(os); }
+
+    virtual bool load_ascii (std::istream& is)
+      { return ptr->load_ascii(is); }
+
+    virtual bool save_binary (std::ostream& os, bool& save_as_floats)
+      { return ptr->save_binary(os, save_as_floats); }
+
+    virtual bool load_binary (std::istream& is, bool swap, 
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+			      octave::mach_info::float_format fmt)
+#else
+                             oct_mach_info::float_format fmt)
+#endif
+      { return ptr->load_binary(is, swap, fmt); }
+
+#if defined (HAVE_HDF5)
+# if SWIG_OCTAVE_PREREQ(4,0,0)
+    virtual bool
+      save_hdf5 (octave_hdf5_id loc_id, const char *name, bool save_as_floats)
+      { return ptr->save_hdf5(loc_id, name, save_as_floats); }
+
+    virtual bool
+      load_hdf5 (octave_hdf5_id loc_id, const char *name, bool have_h5giterate_bug)
+      { return ptr->load_hdf5(loc_id, name, have_h5giterate_bug); }
+# else
+    virtual bool
+      save_hdf5 (hid_t loc_id, const char *name, bool save_as_floats)
+      { return ptr->save_hdf5(loc_id, name, save_as_floats); }
+
+    virtual bool
+      load_hdf5 (hid_t loc_id, const char *name, bool have_h5giterate_bug)
+      { return ptr->load_hdf5(loc_id, name, have_h5giterate_bug); }
+# endif
+#endif
+
+    virtual octave_value convert_to_str(bool pad = false, bool force = false, char type = '"') const
+      { return ptr->convert_to_str(pad, force, type); }
+
+    virtual octave_value convert_to_str_internal(bool pad, bool force, char type) const
+      { return ptr->convert_to_str_internal(pad, force, type); }
+
+#if SWIG_OCTAVE_PREREQ(4,0,0)
+    void print(std::ostream &os, bool pr_as_read_syntax = false)
+#else
+    void print(std::ostream &os, bool pr_as_read_syntax = false) const
+#endif
+      { return ptr->print(os, pr_as_read_syntax); }
+
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+      static void set_type_id(int type_id) { s_t_id=type_id; }
+#else
+# if SWIG_OCTAVE_PREREQ(4,4,0)
+      static void set_type_id(int type_id) { t_id=type_id; }
+# endif
+#endif
+
+    virtual type_conv_info numeric_conversion_function(void) const {
+      return octave_base_value::type_conv_info (default_numeric_conversion_function,
+                                                octave_scalar::static_type_id ());
+    }
+
+  private:
+    static octave_base_value *default_numeric_conversion_function (const octave_base_value& a) {
+      const octave_swig_ref& v = dynamic_cast<const octave_swig_ref&>(a);
+      return new octave_scalar(v.scalar_value());
+    }
+
+#if !SWIG_OCTAVE_PREREQ(4,0,0)
+    DECLARE_OCTAVE_ALLOCATOR;
+#endif
+    DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA;
+  };
+#if !SWIG_OCTAVE_PREREQ(4,0,0)
+  DEFINE_OCTAVE_ALLOCATOR(octave_swig_ref);
+#endif
+  DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA(octave_swig_ref, "swig_ref", "swig_ref");
+
+  class octave_swig_packed:public octave_base_value {
+    swig_type_info *type;
+    std::vector < char > buf;
+  public:
+
+    octave_swig_packed(swig_type_info *_type = 0, const void *_buf = 0, size_t _buf_len = 0)
+      :	type(_type), buf((const char*)_buf, (const char*)_buf + _buf_len)
+      {
+        // Ensure type_id() is set correctly
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+        if (s_t_id == -1) {
+          s_t_id = octave_swig_packed::static_type_id();
+#else
+        if (t_id == -1) {
+          t_id = octave_swig_packed::static_type_id();
+#endif
+        }
+      }
+
+    bool copy(swig_type_info *outtype, void *ptr, size_t sz) const {
+      if (outtype && outtype != type)
+	return false;
+      assert(sz <= buf.size());
+      std::copy(buf.begin(), buf.begin()+sz, (char*)ptr);
+      return true;
+    }
+
+    octave_base_value *clone() const {
+      return new octave_swig_packed(*this);
+    }
+
+    octave_base_value *empty_clone() const {
+      return new octave_swig_packed();
+    }
+
+    bool is_defined() const {
+      return true;
+    }
+
+#if SWIG_OCTAVE_PREREQ(4,0,0)
+    void print(std::ostream &os, bool pr_as_read_syntax = false)
+#else
+    void print(std::ostream &os, bool pr_as_read_syntax = false) const
+#endif
+    {
+      indent(os);
+      os << "swig packed type: name = " << (type ? type->name : std::string()) << ", len = " << buf.size(); newline(os);
+    }
+
+
+    virtual bool save_ascii (std::ostream& os) {
+      return true;
+    }
+
+    virtual bool load_ascii (std::istream& is) {
+      return true;
+    }
+
+    virtual bool save_binary (std::ostream& os, bool& save_as_floats) {
+      return true;
+    }
+
+    virtual bool load_binary (std::istream& is, bool swap, 
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+			      octave::mach_info::float_format fmt) {
+#else
+                             oct_mach_info::float_format fmt) {
+#endif
+      return true;
+    }
+
+#if defined (HAVE_HDF5)
+# if SWIG_OCTAVE_PREREQ(4,0,0)
+    virtual bool
+      save_hdf5 (octave_hdf5_id loc_id, const char *name, bool save_as_floats) {
+      return true;
+    }
+
+    virtual bool
+      load_hdf5 (octave_hdf5_id loc_id, const char *name, bool have_h5giterate_bug) {
+      return true;
+    }
+# else
+    virtual bool
+      save_hdf5 (hid_t loc_id, const char *name, bool save_as_floats) {
+      return true;
+    }
+
+    virtual bool
+      load_hdf5 (hid_t loc_id, const char *name, bool have_h5giterate_bug) {
+      return true;
+    }
+# endif
+#endif
+
+#if SWIG_OCTAVE_PREREQ(9,0,0)
+    static void set_type_id(int type_id) { s_t_id=type_id; }
+#else
+# if SWIG_OCTAVE_PREREQ(4,4,0)
+    static void set_type_id(int type_id) { t_id=type_id; }
+# endif
+#endif
+
+  private:
+#if !SWIG_OCTAVE_PREREQ(4,0,0)
+    DECLARE_OCTAVE_ALLOCATOR;
+#endif
+    DECLARE_OV_TYPEID_FUNCTIONS_AND_DATA;
+  };
+#if !SWIG_OCTAVE_PREREQ(4,0,0)
+  DEFINE_OCTAVE_ALLOCATOR(octave_swig_packed);
+#endif
+  DEFINE_OV_TYPEID_FUNCTIONS_AND_DATA(octave_swig_packed, "swig_packed", "swig_packed");
+
+  SWIGRUNTIME octave_value_list octave_set_immutable(const octave_value_list &args, int nargout) {
+    error("attempt to set immutable member variable");
+    return octave_value_list();
   }
 
-  bool swigCMemOwn;
-  void *swigCObject;
-  swig_type_info *info;
-  v8::Persistent<v8::Object> handle;
-};
+  struct octave_value_ref {
+    const octave_value_list &ovl;
+    int j;
 
-class SWIGV8_ClientData {
-public:
-  v8::Persistent<v8::FunctionTemplate> class_templ;
+    octave_value_ref(const octave_value_list &_ovl, int _j)
+      :ovl(_ovl), j(_j) { }
 
-  void (*dtor) (const v8::WeakCallbackInfo<SWIGV8_Proxy> &data);
-};
-
-SWIGRUNTIME v8::Persistent<v8::FunctionTemplate> SWIGV8_SWIGTYPE_Proxy_class_templ;
-
-SWIGRUNTIME int SWIG_V8_ConvertInstancePtr(SWIGV8_OBJECT objRef, void **ptr, swig_type_info *info, int flags) {
-  SWIGV8_HANDLESCOPE();
-
-  if(objRef->InternalFieldCount() < 1) return SWIG_ERROR;
-
-  SWIGV8_Proxy *cdata = static_cast<SWIGV8_Proxy *>(objRef->GetAlignedPointerFromInternalField(0));
-
-  if(cdata == NULL) {
-    return SWIG_ERROR;
-  }
-  if(info && cdata->info != info) {
-    swig_cast_info *tc = SWIG_TypeCheckStruct(cdata->info, info);
-    if (!tc && cdata->info->name) {
-      tc = SWIG_TypeCheck(cdata->info->name, info);
+    operator  octave_value() const {
+      return ovl(j);
     }
-    bool type_valid = tc != 0;
-    if(!type_valid) {
-      return SWIG_TypeError;
+
+    octave_value operator*() const {
+      return ovl(j);
     }
-    int newmemory = 0;
-    *ptr = SWIG_TypeCast(tc, cdata->swigCObject, &newmemory);
-    assert(!newmemory); /* newmemory handling not yet implemented */
-  } else {
-    *ptr = cdata->swigCObject;
+  };
+
+
+namespace Swig {
+
+  SWIGRUNTIME octave_base_value *swig_value_ref(octave_swig_type *ost) {
+    return new octave_swig_ref(ost);
   }
 
-  if (((flags & SWIG_POINTER_RELEASE) == SWIG_POINTER_RELEASE) && !cdata->swigCMemOwn) {
-    return SWIG_ERROR_RELEASE_NOT_OWNED;
-  } else {
-    if (flags & SWIG_POINTER_DISOWN) {
-      cdata->swigCMemOwn = false;
-    }
-    if (flags & SWIG_POINTER_CLEAR) {
-      cdata->swigCObject = 0;
-    }
+  SWIGRUNTIME octave_swig_type *swig_value_deref(octave_value ov) {
+    if (
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+      ov.iscell()
+#else
+      ov.is_cell()
+#endif
+      && ov.rows() == 1 && ov.columns() == 1)
+      ov = ov.cell_value()(0);
+    return swig_value_deref(*ov.internal_rep());
   }
-  return SWIG_OK;
+
+  SWIGRUNTIME octave_swig_type *swig_value_deref(const octave_base_value &ov) {
+    if (ov.type_id() != octave_swig_ref::static_type_id())
+      return 0;
+    const octave_swig_ref *osr = static_cast < const octave_swig_ref *>(&ov);
+    return osr->get_ptr();
+  }
+
 }
 
 
-SWIGRUNTIME void SWIGV8_Proxy_DefaultDtor(const v8::WeakCallbackInfo<SWIGV8_Proxy> &data) {
-  SWIGV8_Proxy *proxy = data.GetParameter();
-  delete proxy;
+#define swig_unary_op(name) \
+SWIGRUNTIME octave_value swig_unary_op_##name(const octave_base_value &x) { \
+  return octave_swig_type::dispatch_unary_op(x,#name); \
+}
+#define swig_binary_op(name) \
+SWIGRUNTIME octave_value swig_binary_op_##name(const octave_base_value&lhs,const octave_base_value &rhs) { \
+  return octave_swig_type::dispatch_binary_op(lhs,rhs,#name); \
+}
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+#define swigreg_unary_op(name) \
+if (!octave_value_typeinfo::lookup_unary_op(octave_value::op_##name,tid)) \
+typeinfo.register_unary_op(octave_value::op_##name,tid,swig_unary_op_##name);
+#else
+#define swigreg_unary_op(name) \
+if (!octave_value_typeinfo::lookup_unary_op(octave_value::op_##name,tid)) \
+octave_value_typeinfo::register_unary_op(octave_value::op_##name,tid,swig_unary_op_##name);
+#endif
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+#define swigreg_binary_op(name) \
+if (!octave_value_typeinfo::lookup_binary_op(octave_value::op_##name,tid1,tid2)) \
+typeinfo.register_binary_op(octave_value::op_##name,tid1,tid2,swig_binary_op_##name);
+#else
+#define swigreg_binary_op(name) \
+if (!octave_value_typeinfo::lookup_binary_op(octave_value::op_##name,tid1,tid2)) \
+octave_value_typeinfo::register_binary_op(octave_value::op_##name,tid1,tid2,swig_binary_op_##name);
+#endif
+
+  swig_unary_op(not);
+  swig_unary_op(uplus);
+  swig_unary_op(uminus);
+  swig_unary_op(transpose);
+  swig_unary_op(hermitian);
+  swig_unary_op(incr);
+  swig_unary_op(decr);
+
+  swig_binary_op(add);
+  swig_binary_op(sub);
+  swig_binary_op(mul);
+  swig_binary_op(div);
+  swig_binary_op(pow);
+  swig_binary_op(ldiv);
+#if !SWIG_OCTAVE_PREREQ(4,2,0)
+  swig_binary_op(lshift);
+  swig_binary_op(rshift);
+#endif
+  swig_binary_op(lt);
+  swig_binary_op(le);
+  swig_binary_op(eq);
+  swig_binary_op(ge);
+  swig_binary_op(gt);
+  swig_binary_op(ne);
+  swig_binary_op(el_mul);
+  swig_binary_op(el_div);
+  swig_binary_op(el_pow);
+  swig_binary_op(el_ldiv);
+  swig_binary_op(el_and);
+  swig_binary_op(el_or);
+
+  SWIGRUNTIME void SWIG_InstallUnaryOps(int tid) {
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+    octave::type_info& typeinfo = octave::interpreter::the_interpreter()->get_type_info();
+#endif
+    swigreg_unary_op(not);
+    swigreg_unary_op(uplus);
+    swigreg_unary_op(uminus);
+    swigreg_unary_op(transpose);
+    swigreg_unary_op(hermitian);
+    swigreg_unary_op(incr);
+    swigreg_unary_op(decr);
+  }
+  SWIGRUNTIME void SWIG_InstallBinaryOps(int tid1, int tid2) {
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+    octave::type_info& typeinfo = octave::interpreter::the_interpreter()->get_type_info();
+#endif
+    swigreg_binary_op(add);
+    swigreg_binary_op(sub);
+    swigreg_binary_op(mul);
+    swigreg_binary_op(div);
+    swigreg_binary_op(pow);
+    swigreg_binary_op(ldiv);
+#if !SWIG_OCTAVE_PREREQ(4,2,0)
+    swigreg_binary_op(lshift);
+    swigreg_binary_op(rshift);
+#endif
+    swigreg_binary_op(lt);
+    swigreg_binary_op(le);
+    swigreg_binary_op(eq);
+    swigreg_binary_op(ge);
+    swigreg_binary_op(gt);
+    swigreg_binary_op(ne);
+    swigreg_binary_op(el_mul);
+    swigreg_binary_op(el_div);
+    swigreg_binary_op(el_pow);
+    swigreg_binary_op(el_ldiv);
+    swigreg_binary_op(el_and);
+    swigreg_binary_op(el_or);
+  }
+  SWIGRUNTIME void SWIG_InstallOps(int tid) {
+    // here we assume that tid are conseq integers increasing from zero, and 
+    // that our tid is the last one. might be better to have explicit string 
+    // list of types we should bind to, and use lookup_type to resolve their tid.
+
+    SWIG_InstallUnaryOps(tid);
+    SWIG_InstallBinaryOps(tid, tid);
+    for (int j = 0; j < tid; ++j) {
+      SWIG_InstallBinaryOps(j, tid);
+      SWIG_InstallBinaryOps(tid, j);
+    }
+  }
+
+SWIGRUNTIME octave_value SWIG_Octave_NewPointerObj(void *ptr, swig_type_info *type, int flags) {
+  int own = (flags &SWIG_POINTER_OWN) ? SWIG_POINTER_OWN : 0;
+
+  if (ptr) {
+#ifdef SWIG_DIRECTORS
+    Swig::Director *d = Swig::get_rtdir(ptr);
+    if (d && Swig::swig_director_get_self(d))
+      return Swig::swig_director_get_self(d)->as_value();
+#endif
+    return Swig::swig_value_ref(new octave_swig_type(ptr, type, own));
+  }
+  return octave_value(Matrix()); // null matrix
 }
 
-SWIGRUNTIME int SWIG_V8_GetInstancePtr(SWIGV8_VALUE valRef, void **ptr) {
-  if(!valRef->IsObject()) {
-    return SWIG_TypeError;
-  }
-  SWIGV8_OBJECT objRef = SWIGV8_OBJECT::Cast(valRef);
-
-  if(objRef->InternalFieldCount() < 1) return SWIG_ERROR;
-
-  SWIGV8_Proxy *cdata = static_cast<SWIGV8_Proxy *>(objRef->GetAlignedPointerFromInternalField(0));
-
-  if(cdata == NULL) {
-    return SWIG_ERROR;
-  }
-
-  *ptr = cdata->swigCObject;
-
-  return SWIG_OK;
-}
-
-SWIGRUNTIME void SWIGV8_SetPrivateData(SWIGV8_OBJECT obj, void *ptr, swig_type_info *info, int flags) {
-  SWIGV8_Proxy *cdata = new SWIGV8_Proxy();
-  cdata->swigCObject = ptr;
-  cdata->swigCMemOwn = (flags & SWIG_POINTER_OWN) ? 1 : 0;
-  cdata->info = info;
-
-  obj->SetAlignedPointerInInternalField(0, cdata);
-
-  cdata->handle.Reset(v8::Isolate::GetCurrent(), obj);
-
-  if(cdata->swigCMemOwn && (SWIGV8_ClientData*)info->clientdata) {
-    cdata->handle.SetWeak(cdata, ((SWIGV8_ClientData*)info->clientdata)->dtor, v8::WeakCallbackType::kParameter);
-  } else {
-    cdata->handle.SetWeak(cdata, SWIGV8_Proxy_DefaultDtor, v8::WeakCallbackType::kParameter);
-  }
-}
-
-SWIGRUNTIME int SWIG_V8_ConvertPtr(SWIGV8_VALUE valRef, void **ptr, swig_type_info *info, int flags) {
-  SWIGV8_HANDLESCOPE();
-  
-  /* special case: JavaScript null => C NULL pointer */
-  if(valRef->IsNull()) {
-    *ptr=0;
+SWIGRUNTIME int SWIG_Octave_ConvertPtrAndOwn(octave_value ov, void **ptr, swig_type_info *type, int flags, int *own) {
+    if (
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+      ov.iscell()
+#else
+      ov.is_cell()
+#endif
+      && ov.rows() == 1 && ov.columns() == 1)
+    ov = ov.cell_value()(0);
+  if (!ov.is_defined() ||
+      (ov.is_matrix_type() && ov.rows() == 0 && ov.columns() == 0) ) {
+    if (ptr)
+      *ptr = 0;
     return (flags & SWIG_POINTER_NO_NULL) ? SWIG_NullReferenceError : SWIG_OK;
   }
-  if(!valRef->IsObject()) {
-    return SWIG_TypeError;
-  }
-  SWIGV8_OBJECT objRef = SWIGV8_OBJECT::Cast(valRef);
-  return SWIG_V8_ConvertInstancePtr(objRef, ptr, info, flags);
+  if (ov.type_id() != octave_swig_ref::static_type_id())
+    return SWIG_ERROR;
+  octave_swig_ref *osr = static_cast < octave_swig_ref *>(ov.internal_rep());
+  octave_swig_type *ost = osr->get_ptr();
+  return ost->cast(ptr, type, own, flags);
 }
 
-SWIGRUNTIME SWIGV8_VALUE SWIG_V8_NewPointerObj(void *ptr, swig_type_info *info, int flags) {
-  SWIGV8_HANDLESCOPE_ESC();
-  
-  SWIGV8_FUNCTION_TEMPLATE class_templ;
-
-  if (ptr == NULL) {
-    v8::Local<v8::Primitive> result = SWIGV8_NULL();
-    SWIGV8_ESCAPE(result);
-  }
-
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
-
-  if(info->clientdata != 0) {
-    class_templ = v8::Local<v8::FunctionTemplate>::New(isolate, ((SWIGV8_ClientData*) info->clientdata)->class_templ);
-  } else {
-    class_templ = v8::Local<v8::FunctionTemplate>::New(isolate, SWIGV8_SWIGTYPE_Proxy_class_templ);
-  }
-
-  v8::Local<v8::Object> result = class_templ->InstanceTemplate()->NewInstance(SWIGV8_CURRENT_CONTEXT()).ToLocalChecked();
-
-  SWIGV8_SetPrivateData(result, ptr, info, flags);
-
-  SWIGV8_ESCAPE(result);
+SWIGRUNTIME octave_value SWIG_Octave_NewPackedObj(void *ptr, size_t sz, swig_type_info *type) {
+  return new octave_swig_packed(type, (char *) ptr, sz);
 }
 
-#define SWIG_ConvertPtr(obj, ptr, info, flags)    SWIG_V8_ConvertPtr(obj, ptr, info, flags)
-#define SWIG_NewPointerObj(ptr, info, flags)      SWIG_V8_NewPointerObj(ptr, info, flags)
-
-#define SWIG_ConvertInstance(obj, pptr, type, flags)    SWIG_V8_ConvertInstancePtr(obj, pptr, type, flags)
-#define SWIG_NewInstanceObj(thisvalue, type, flags)     SWIG_V8_NewPointerObj(thisvalue, type, flags)
-
-#define SWIG_ConvertFunctionPtr(obj, pptr, type)        SWIG_V8_ConvertPtr(obj, pptr, type, 0)
-#define SWIG_NewFunctionPtrObj(ptr, type)               SWIG_V8_NewPointerObj(ptr, type, 0)
-
-#define SWIG_GetInstancePtr(obj, ptr)    SWIG_V8_GetInstancePtr(obj, ptr)
-
-SWIGRUNTIME SwigV8ReturnValue _SWIGV8_wrap_equals(const SwigV8Arguments &args) {
-  SWIGV8_HANDLESCOPE();
-  
-  SWIGV8_VALUE jsresult;
-  void *arg1 = (void *) 0 ;
-  void *arg2 = (void *) 0 ;
-  bool result;
-  int res1;
-  int res2;
-
-  if(args.Length() != 1) SWIG_exception_fail(SWIG_ERROR, "Illegal number of arguments for equals.");
-
-  res1 = SWIG_GetInstancePtr(args.Holder(), &arg1);
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ERROR, "Could not get pointer from 'this' object for equals.");
-  }
-  res2 = SWIG_GetInstancePtr(args[0], &arg2);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "equals" "', argument " "1"" of type '" "void *""'");
-  }
-
-  result = (bool)(arg1 == arg2);
-  jsresult =  SWIGV8_BOOLEAN_NEW(result);
-
-  SWIGV8_RETURN(jsresult);
-  goto fail;
-fail:
-  SWIGV8_RETURN(SWIGV8_UNDEFINED());
+SWIGRUNTIME int SWIG_Octave_ConvertPacked(const octave_value &ov, void *ptr, size_t sz, swig_type_info *type) {
+  if (!ov.is_defined())
+    return SWIG_ERROR;
+  if (ov.type_id() != octave_swig_packed::static_type_id())
+    return SWIG_ERROR;
+  octave_swig_packed *ost = static_cast < octave_swig_packed *>(ov.internal_rep());
+  return ost->copy(type, (char *) ptr, sz) ? SWIG_OK : SWIG_ERROR;
 }
 
-SWIGRUNTIME SwigV8ReturnValue _wrap_getCPtr(const SwigV8Arguments &args) {
-  SWIGV8_HANDLESCOPE();
-  
-  SWIGV8_VALUE jsresult;
-  void *arg1 = (void *) 0 ;
-  intptr_t result;
-  int res1;
-
-  res1 = SWIG_GetInstancePtr(args.Holder(), &arg1);
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "getCPtr" "', argument " "1"" of type '" "void *""'");
-  }
-
-  result = (intptr_t)arg1;
-  jsresult = SWIGV8_NUMBER_NEW(result);
-
-  SWIGV8_RETURN(jsresult);
-  goto fail;
-fail:
-  SWIGV8_RETURN(SWIGV8_UNDEFINED());
+SWIGRUNTIMEINLINE void SWIG_Octave_SetConstant(octave_swig_type *module_ns, const std::string &name, const octave_value &ov) {
+  module_ns->assign(name, ov);
 }
 
-/* ---------------------------------------------------------------------------
- * PackedData object
- *
- * ---------------------------------------------------------------------------*/
-
-class SwigV8PackedData {
-public:
-  SwigV8PackedData(void *data, size_t size, swig_type_info *type): data(nullptr), size(size), type(type) {
-    this->data = malloc(size);
-    if (this->data != nullptr)
-      memcpy(this->data, data, size);
-  };
-
-  ~SwigV8PackedData() {
-    free(this->data);
-  };
-
-  void *data;
-  size_t size;
-  swig_type_info *type;
-
-  v8::Persistent<v8::Object> handle;
-};
-
-SWIGRUNTIMEINLINE
-int SwigV8Packed_Check(SWIGV8_VALUE valRef) {
-  SWIGV8_HANDLESCOPE();
-  
-  SWIGV8_OBJECT objRef = SWIGV8_TO_OBJECT(valRef);
-  if(objRef->InternalFieldCount() < 1) return false;
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(v8::Isolate::GetCurrent(), SWIGV8_STRING_NEW("__swig__packed_data__"));
-  v8::Local<v8::Value> flag;
-  if (!objRef->GetPrivate(SWIGV8_CURRENT_CONTEXT(), privateKey).ToLocal(&flag))
-    return false;
-  return (flag->IsBoolean() && SWIGV8_BOOLEAN_VALUE(flag));
+SWIGRUNTIMEINLINE octave_value SWIG_Octave_GetGlobalValue(std::string name) {
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+  octave::interpreter *interp = octave::interpreter::the_interpreter ();
+  return interp->global_varval(name);
+#else
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+  octave::symbol_table& symtab = octave::interpreter::the_interpreter()->get_symbol_table();
+  return symtab.global_varval(name);
+#else
+  return get_global_value(name, true);
+#endif
+#endif
 }
 
-SWIGRUNTIME
-swig_type_info *SwigV8Packed_UnpackData(SWIGV8_VALUE valRef, void *ptr, size_t size) {
-  if (SwigV8Packed_Check(valRef)) {
-    SWIGV8_HANDLESCOPE();
-    
-    SwigV8PackedData *sobj;
+SWIGRUNTIME void SWIG_Octave_SetGlobalValue(std::string name, const octave_value& value) {
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+  octave::interpreter *interp = octave::interpreter::the_interpreter ();
+  interp->global_assign(name, value);
+#elif SWIG_OCTAVE_PREREQ(4,4,0)
+  octave::symbol_table& symtab = octave::interpreter::the_interpreter()->get_symbol_table();
+  symtab.global_assign(name, value);
+#else
+  set_global_value(name, value);
+#endif
+}
 
-    SWIGV8_OBJECT objRef = SWIGV8_TO_OBJECT(valRef);
+SWIGRUNTIME void SWIG_Octave_LinkGlobalValue(std::string name) {
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+  octave::symbol_scope symscope = octave::interpreter::the_interpreter()->get_current_scope();
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+  octave::interpreter *interp = octave::interpreter::the_interpreter ();
+  interp->assign(name, interp->global_varval(name));
+  octave::tree_evaluator& tree_eval = interp->get_evaluator();
+#if SWIG_OCTAVE_PREREQ(8,0,0)
+  std::shared_ptr<octave::stack_frame> stackFrame = tree_eval.get_current_stack_frame();
+#else
+  octave::call_stack& callStack = tree_eval.get_call_stack();
+  std::shared_ptr<octave::stack_frame> stackFrame = callStack.get_current_stack_frame();
+#endif
+  octave::symbol_record sym=symscope.lookup_symbol(name);
+  stackFrame->mark_global(sym);
+#else
+  octave::symbol_table& symtab = octave::interpreter::the_interpreter()->get_symbol_table();
+  symscope.assign(name, symtab.global_varval(name));
+  symscope.mark_global(name);
+#endif
+#else
+#if !SWIG_OCTAVE_PREREQ(3,2,0)
+  link_to_global_variable(curr_sym_tab->lookup(name, true));
+#else
+#if !SWIG_OCTAVE_PREREQ(3,8,0)
+  symbol_table::varref(name);
+#endif
+  symbol_table::mark_global(name);
+#endif
+#endif
+}
 
-    sobj = static_cast<SwigV8PackedData*>(objRef->GetAlignedPointerFromInternalField(0));
-    if (sobj == NULL || sobj->size != size) return 0;
-    memcpy(ptr, sobj->data, size);
-    return sobj->type;
-  } else {
+SWIGRUNTIME swig_module_info *SWIG_Octave_GetModule(void *clientdata) {
+  octave_value ov = SWIG_Octave_GetGlobalValue("__SWIG_MODULE__" SWIG_TYPE_TABLE_NAME SWIG_RUNTIME_VERSION);
+  if (!ov.is_defined() ||
+      ov.type_id() != octave_swig_packed::static_type_id())
     return 0;
-  }
+  const octave_swig_packed* osp = 
+    static_cast < const octave_swig_packed *> (ov.internal_rep());
+  swig_module_info *pointer = 0;
+  osp->copy(0, &pointer, sizeof(swig_module_info *));
+  return pointer;
 }
 
-SWIGRUNTIME
-int SWIGV8_ConvertPacked(SWIGV8_VALUE valRef, void *ptr, size_t sz, swig_type_info *ty) {
-  swig_type_info *to = SwigV8Packed_UnpackData(valRef, ptr, sz);
-  if (!to) return SWIG_ERROR;
-  if (ty) {
-    if (to != ty) {
-      /* check type cast? */
-      swig_cast_info *tc = SWIG_TypeCheck(to->name,ty);
-      if (!tc) return SWIG_ERROR;
-    }
-  }
-  return SWIG_OK;
+SWIGRUNTIME void SWIG_Octave_SetModule(void *clientdata, swig_module_info *pointer) {
+  octave_value ov = new octave_swig_packed(0, &pointer, sizeof(swig_module_info *));
+  SWIG_Octave_SetGlobalValue("__SWIG_MODULE__" SWIG_TYPE_TABLE_NAME SWIG_RUNTIME_VERSION, ov);
 }
 
-SWIGRUNTIME void _wrap_SwigV8PackedData_delete(const v8::WeakCallbackInfo<SwigV8PackedData> &data) {
-  SwigV8PackedData *cdata = data.GetParameter();
-  cdata->handle.Reset();
-  delete cdata;
-}
 
-SWIGRUNTIME
-SWIGV8_VALUE SWIGV8_NewPackedObj(void *data, size_t size, swig_type_info *type) {
-  SWIGV8_HANDLESCOPE_ESC();
-
-  SwigV8PackedData *cdata = new SwigV8PackedData(data, size, type);
-  SWIGV8_OBJECT_TEMPLATE tmpl = SWIGV8_OBJECT_TEMPLATE_NEW();
-  tmpl->SetInternalFieldCount(1);
-  v8::Local<v8::Object> obj = SWIGV8_OBJECT_TEMPLATE_INSTACE(tmpl);
-
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(v8::Isolate::GetCurrent(), SWIGV8_STRING_NEW("__swig__packed_data__"));
-  obj->SetPrivate(SWIGV8_CURRENT_CONTEXT(), privateKey, SWIGV8_BOOLEAN_NEW(true));
-
-  obj->SetAlignedPointerInInternalField(0, cdata);
-
-  cdata->handle.Reset(v8::Isolate::GetCurrent(), obj);
-
-  cdata->handle.SetWeak(cdata, _wrap_SwigV8PackedData_delete, v8::WeakCallbackType::kParameter);
-
-  SWIGV8_ESCAPE(obj);
-}
-
-#define SWIG_ConvertMember(obj, ptr, sz, ty)            SWIGV8_ConvertPacked(obj, ptr, sz, ty)
-#define SWIG_NewMemberObj(ptr, sz, type)                SWIGV8_NewPackedObj(ptr, sz, type)
-
-
-/* ---------------------------------------------------------------------------
- * Support for IN/OUTPUT typemaps (see Lib/typemaps/inoutlist.swg)
- *
- * ---------------------------------------------------------------------------*/
-
-SWIGRUNTIME
-
-SWIGV8_VALUE SWIGV8_AppendOutput(SWIGV8_VALUE result, SWIGV8_VALUE obj) {
-  SWIGV8_HANDLESCOPE_ESC();
-  
-  if (result->IsUndefined()) {
-    result = SWIGV8_ARRAY_NEW(0);
-  } else if (!result->IsArray()) {
-    SWIGV8_ARRAY tmparr = SWIGV8_ARRAY_NEW(0);
-    SWIGV8_ARRAY_SET(tmparr, 0, result);
-    result = tmparr;
-  }
-
-  SWIGV8_ARRAY arr = SWIGV8_ARRAY::Cast(result);
-  SWIGV8_ARRAY_SET(arr, arr->Length(), obj);
-  SWIGV8_ESCAPE(arr);
+SWIGINTERN void SWIG_Octave_Raise(const octave_value &obj, const char *type) {
+  if (obj.is_string())
+    error("%s", obj.string_value().c_str());
+  else
+    error("C++ side threw an exception of type %s", type);
 }
 
 
 
-typedef v8::FunctionCallback            SwigV8FunctionCallback;
-typedef v8::AccessorNameGetterCallback  SwigV8AccessorGetterCallback;
-typedef v8::AccessorNameSetterCallback  SwigV8AccessorSetterCallback;
-typedef v8::PropertyCallbackInfo<void>  SwigV8PropertyCallbackInfoVoid;
+#define SWIG_exception_fail(code, msg) do { SWIG_Error(code, msg); SWIG_fail; } while(0) 
 
-/**
- * Creates a class template for a class with specified initialization function.
- */
-SWIGRUNTIME SWIGV8_FUNCTION_TEMPLATE SWIGV8_CreateClassTemplate(const char* symbol) {
-    SWIGV8_HANDLESCOPE_ESC();
-    
-    v8::Local<v8::FunctionTemplate> class_templ = SWIGV8_FUNCTEMPLATE_NEW_VOID();
-    class_templ->SetClassName(SWIGV8_SYMBOL_NEW(symbol));
-
-    SWIGV8_OBJECT_TEMPLATE inst_templ = class_templ->InstanceTemplate();
-    inst_templ->SetInternalFieldCount(1);
-
-    SWIGV8_OBJECT_TEMPLATE equals_templ = class_templ->PrototypeTemplate();
-    equals_templ->Set(SWIGV8_SYMBOL_NEW("equals"), SWIGV8_FUNCTEMPLATE_NEW(_SWIGV8_wrap_equals));
-
-    SWIGV8_OBJECT_TEMPLATE cptr_templ = class_templ->PrototypeTemplate();
-    cptr_templ->Set(SWIGV8_SYMBOL_NEW("getCPtr"), SWIGV8_FUNCTEMPLATE_NEW(_wrap_getCPtr));
-
-    SWIGV8_ESCAPE(class_templ);
-}
-
-/**
- * Registers a class method with given name for a given class template.
- */
-SWIGRUNTIME void SWIGV8_AddMemberFunction(SWIGV8_FUNCTION_TEMPLATE class_templ, const char* symbol,
-  SwigV8FunctionCallback _func) {
-    SWIGV8_OBJECT_TEMPLATE proto_templ = class_templ->PrototypeTemplate();
-    proto_templ->Set(SWIGV8_SYMBOL_NEW(symbol), SWIGV8_FUNCTEMPLATE_NEW(_func));
-}
-
-/**
- * Registers a class property with given name for a given class template.
- */
-SWIGRUNTIME void SWIGV8_AddMemberVariable(SWIGV8_FUNCTION_TEMPLATE class_templ, const char* symbol,
-  SwigV8AccessorGetterCallback getter, SwigV8AccessorSetterCallback setter) {
-  SWIGV8_OBJECT_TEMPLATE proto_templ = class_templ->InstanceTemplate();
-  proto_templ->SetNativeDataProperty(SWIGV8_SYMBOL_NEW(symbol), getter, setter);
-}
-
-/**
- * Registers a class method with given name for a given object.
- */
-SWIGRUNTIME void SWIGV8_AddStaticFunction(SWIGV8_OBJECT obj, const char* symbol,
-  const SwigV8FunctionCallback& _func, v8::Local<v8::Context> context) {
-  SWIGV8_MAYBE_CHECK(obj->Set(context, SWIGV8_SYMBOL_NEW(symbol), SWIGV8_FUNCTEMPLATE_NEW(_func)->GetFunction(context).ToLocalChecked()));
-}
-
-/**
- * Registers a class method with given name for a given object.
- */
-SWIGRUNTIME void SWIGV8_AddStaticVariable(SWIGV8_OBJECT obj, const char* symbol,
-  SwigV8AccessorGetterCallback getter, SwigV8AccessorSetterCallback setter,
-  v8::Local<v8::Context> context) {
-  SWIGV8_MAYBE_CHECK(obj->SetNativeDataProperty(context, SWIGV8_SYMBOL_NEW(symbol), getter, setter));
-}
-
-SWIGRUNTIME void JS_veto_set_variable(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const SwigV8PropertyCallbackInfoVoid& info)
-{
-    char buffer[256];
-    char msg[512];
-    int res;
-
-    v8::Local<v8::String> sproperty;
-    if (property->ToString(SWIGV8_CURRENT_CONTEXT()).ToLocal(&sproperty)) {
-      SWIGV8_WRITE_UTF8(sproperty, buffer, 256);
-      res = SWIG_snprintf(msg, sizeof(msg), "Tried to write read-only variable: %s.", buffer);
-    }
-    else {
-      res = -1;
-    }
-
-    if(res<0) {
-      SWIG_exception(SWIG_ERROR, "Tried to write read-only variable.");
-    } else {
-      SWIG_exception(SWIG_ERROR, msg);
-    }
-fail: ;
-}
+#define SWIG_contract_assert(expr, msg) do { if (!(expr)) { SWIG_Error(SWIG_RuntimeError, msg); SWIG_fail; } } while (0) 
 
 
 
@@ -1441,64 +2741,10 @@ static swig_module_info swig_module = {swig_types, 1, 0, 0, 0, 0};
 
 /* -------- TYPES TABLE (END) -------- */
 
+extern "C" {
 
-
-#ifdef __cplusplus
-#include <utility>
-/* SwigValueWrapper is described in swig.swg */
-template<typename T> class SwigValueWrapper {
-  struct SwigSmartPointer {
-    T *ptr;
-    SwigSmartPointer(T *p) : ptr(p) { }
-    ~SwigSmartPointer() { delete ptr; }
-    SwigSmartPointer& operator=(SwigSmartPointer& rhs) { T* oldptr = ptr; ptr = 0; delete oldptr; ptr = rhs.ptr; rhs.ptr = 0; return *this; }
-    void reset(T *p) { T* oldptr = ptr; ptr = 0; delete oldptr; ptr = p; }
-  } pointer;
-  SwigValueWrapper& operator=(const SwigValueWrapper<T>& rhs);
-  SwigValueWrapper(const SwigValueWrapper<T>& rhs);
-public:
-  SwigValueWrapper() : pointer(0) { }
-  SwigValueWrapper& operator=(const T& t) { SwigSmartPointer tmp(new T(t)); pointer = tmp; return *this; }
-#if __cplusplus >=201103L
-  SwigValueWrapper& operator=(T&& t) { SwigSmartPointer tmp(new T(std::move(t))); pointer = tmp; return *this; }
-  operator T&&() const { return std::move(*pointer.ptr); }
-#else
-  operator T&() const { return *pointer.ptr; }
-#endif
-  T *operator&() const { return pointer.ptr; }
-  static void reset(SwigValueWrapper& t, T *p) { t.pointer.reset(p); }
-};
-
-/*
- * SwigValueInit() is a generic initialisation solution as the following approach:
- * 
- *       T c_result = T();
- * 
- * doesn't compile for all types for example:
- * 
- *       unsigned int c_result = unsigned int();
- */
-template <typename T> T SwigValueInit() {
-  return T();
-}
-
-#if __cplusplus >=201103L
-# define SWIG_STD_MOVE(OBJ) std::move(OBJ)
-#else
-# define SWIG_STD_MOVE(OBJ) OBJ
-#endif
-
-#endif
-
-
-#define SWIG_as_voidptr(a) const_cast< void * >(static_cast< const void * >(a)) 
-#define SWIG_as_voidptrptr(a) ((void)SWIG_as_voidptr(*a),reinterpret_cast< void** >(a)) 
-
-
-#include <stdexcept>
-
-
-#include <assert.h>
+#define SWIG_as_voidptr(a) (void *)((const void *)(a)) 
+#define SWIG_as_voidptrptr(a) ((void)SWIG_as_voidptr(*a),(void**)(a)) 
 
 
 #ifdef __cplusplus
@@ -1514,147 +2760,182 @@ extern int my_mod(int x, int y);
 #endif
 
 
-SWIGINTERN
-int SWIG_AsVal_double (SWIGV8_VALUE obj, double *val)
+  SWIGINTERN int SWIG_AsVal_double (const octave_value& ov, double* val)
+    {
+      if (!ov.is_scalar_type())
+	return SWIG_TypeError;
+      if (ov.is_complex_scalar())
+	return SWIG_TypeError;
+      if (val)
+	*val = ov.double_value();
+      return SWIG_OK;
+    }
+
+
+  SWIGINTERNINLINE octave_value SWIG_From_double    (double value)
+    {    
+      return octave_value(value);
+    }
+
+
+#include <limits.h>
+#if !defined(SWIG_NO_LLONG_MAX)
+# if !defined(LLONG_MAX) && defined(__GNUC__) && defined (__LONG_LONG_MAX__)
+#   define LLONG_MAX __LONG_LONG_MAX__
+#   define LLONG_MIN (-LLONG_MAX - 1LL)
+#   define ULLONG_MAX (LLONG_MAX * 2ULL + 1ULL)
+# endif
+#endif
+
+
+  SWIGINTERN int SWIG_AsVal_long (const octave_value& ov, long* val)
+    {
+      if (!ov.is_scalar_type())
+	return SWIG_TypeError;
+      if (ov.is_complex_scalar())
+	return SWIG_TypeError;
+      if (ov.is_double_type()||ov.is_single_type()) {
+	double v=ov.double_value();
+	if (v!=floor(v))
+	  return SWIG_TypeError;
+      }
+      if (val)
+	*val = ov.long_value();
+      return SWIG_OK;
+    }
+
+
+SWIGINTERN int
+SWIG_AsVal_int (octave_value obj, int *val)
 {
-  if(!obj->IsNumber()) {
-    return SWIG_TypeError;
+  long v;
+  int res = SWIG_AsVal_long (obj, &v);
+  if (SWIG_IsOK(res)) {
+    if ((v < INT_MIN || v > INT_MAX)) {
+      return SWIG_OverflowError;
+    } else {
+      if (val) *val = (int)(v);
+    }
+  }  
+  return res;
+}
+
+
+  SWIGINTERNINLINE octave_value SWIG_From_long    (long value)
+    {    
+      return octave_value(value);
+    }
+
+
+SWIGINTERNINLINE octave_value
+SWIG_From_int  (int value)
+{    
+  return SWIG_From_long  (value);
+}
+
+}
+
+SWIG_DEFUN( My_variable_set, _wrap_My_variable_set, std::string() ) {
+  if (!SWIG_check_num_args("My_variable_set",args.length(),1,1,0)) return octave_value_list();
+  {
+    double val;
+    int res = SWIG_AsVal_double(args(0), &val);
+    if (!SWIG_IsOK(res)) {
+      SWIG_exception_fail(SWIG_ArgError(res), "in variable '""My_variable""' of type '""double""'");
+    }
+    My_variable = (double)(val);
   }
-  if(val) *val = SWIGV8_NUMBER_VALUE(obj);
-
-  return SWIG_OK;
-}
-
-
-SWIGINTERN
-SWIGV8_VALUE SWIG_From_double   (double val)
-{
-  return SWIGV8_NUMBER_NEW(val);
-}
-
-
-SWIGINTERN
-int SWIG_AsVal_int (SWIGV8_VALUE valRef, int* val)
-{
-  if (!valRef->IsNumber()) {
-    return SWIG_TypeError;
-  }
-  if(val) *val = SWIGV8_INTEGER_VALUE(valRef);
-
-  return SWIG_OK;
-}
-
-
-SWIGINTERNINLINE
-SWIGV8_VALUE SWIG_From_int  (int value)
-{
-  return SWIGV8_INT32_NEW(value);
-}
-
-
-#define SWIGV8_INIT example_initialize
-
-
-
-
-static void _wrap_My_variable_set(v8::Local<v8::Name> property, v8::Local<v8::Value> value, const SwigV8PropertyCallbackInfoVoid &info) {
-  SWIGV8_HANDLESCOPE();
-  
-  double arg1 ;
-  double val1 ;
-  int ecode1 = 0 ;
-  
-  ecode1 = SWIG_AsVal_double(value, &val1);
-  if (!SWIG_IsOK(ecode1)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "My_variable_set" "', argument " "1"" of type '" "double""'");
-  } 
-  arg1 = static_cast< double >(val1);My_variable = arg1;
-  
-  
-  goto fail;
+  return octave_value_list();
 fail:
-  return;
+  return octave_value_list();
 }
 
 
-static SwigV8ReturnValue _wrap_My_variable_get(v8::Local<v8::Name> property, const SwigV8PropertyCallbackInfo &info) {
-  SWIGV8_HANDLESCOPE();
+SWIG_DEFUN( My_variable_get, _wrap_My_variable_get, std::string() ) {
+  octave_value obj;
   
-  SWIGV8_VALUE jsresult;
-  double result;
-  
-  result = (double)My_variable;
-  jsresult = SWIG_From_double(static_cast< double >(result));
-  
-  SWIGV8_RETURN_INFO(jsresult, info);
-  
-  goto fail;
-fail:
-  SWIGV8_RETURN_INFO(SWIGV8_UNDEFINED(), info);
+  obj = SWIG_From_double((double)(My_variable));
+  return obj;
 }
 
 
-static SwigV8ReturnValue _wrap_fact(const SwigV8Arguments &args) {
-  SWIGV8_HANDLESCOPE();
-  
-  SWIGV8_VALUE jsresult;
+SWIG_DEFUN( fact, _wrap_fact, std::string() ) {
   int arg1 ;
   int val1 ;
   int ecode1 = 0 ;
+  octave_value_list _out;
+  octave_value_list *_outp=&_out;
+  octave_value _outv;
   int result;
   
-  if (args.Length() < 1 || args.Length() > 1) SWIG_exception_fail(SWIG_ERROR, "Illegal number of arguments for _wrap_fact.");
-  
-  ecode1 = SWIG_AsVal_int(args[0], &val1);
-  if (!SWIG_IsOK(ecode1)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "fact" "', argument " "1"" of type '" "int""'");
-  } 
-  arg1 = static_cast< int >(val1);result = (int)fact(arg1);
-  jsresult = SWIG_From_int(static_cast< int >(result));
-  
-  
-  SWIGV8_RETURN(jsresult);
-  
-  goto fail;
-fail:
-  SWIGV8_RETURN(SWIGV8_UNDEFINED());
+  try {
+    if (!SWIG_check_num_args("fact",args.length(),1,1,0)) {
+      SWIG_fail;
+    }
+    ecode1 = SWIG_AsVal_int(args(0), &val1);
+    if (!SWIG_IsOK(ecode1)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "fact" "', argument " "1"" of type '" "int""'");
+    } 
+    arg1 = (int)(val1);
+    result = (int)fact(arg1);
+    _outv = SWIG_From_int((int)(result));
+    if (_outv.is_defined()) _outp = SWIG_Octave_AppendOutput(_outp, _outv);
+    return _out;
+  fail:
+    return octave_value_list();
+  }
+  catch(...) {
+    throw;
+  }
 }
 
 
-static SwigV8ReturnValue _wrap_my_mod(const SwigV8Arguments &args) {
-  SWIGV8_HANDLESCOPE();
-  
-  SWIGV8_VALUE jsresult;
+SWIG_DEFUN( my_mod, _wrap_my_mod, std::string() ) {
   int arg1 ;
   int arg2 ;
   int val1 ;
   int ecode1 = 0 ;
   int val2 ;
   int ecode2 = 0 ;
+  octave_value_list _out;
+  octave_value_list *_outp=&_out;
+  octave_value _outv;
   int result;
   
-  if (args.Length() < 2 || args.Length() > 2) SWIG_exception_fail(SWIG_ERROR, "Illegal number of arguments for _wrap_my_mod.");
-  
-  ecode1 = SWIG_AsVal_int(args[0], &val1);
-  if (!SWIG_IsOK(ecode1)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "my_mod" "', argument " "1"" of type '" "int""'");
-  } 
-  arg1 = static_cast< int >(val1);ecode2 = SWIG_AsVal_int(args[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "my_mod" "', argument " "2"" of type '" "int""'");
-  } 
-  arg2 = static_cast< int >(val2);result = (int)my_mod(arg1,arg2);
-  jsresult = SWIG_From_int(static_cast< int >(result));
-  
-  
-  
-  SWIGV8_RETURN(jsresult);
-  
-  goto fail;
-fail:
-  SWIGV8_RETURN(SWIGV8_UNDEFINED());
+  try {
+    if (!SWIG_check_num_args("my_mod",args.length(),2,2,0)) {
+      SWIG_fail;
+    }
+    ecode1 = SWIG_AsVal_int(args(0), &val1);
+    if (!SWIG_IsOK(ecode1)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "my_mod" "', argument " "1"" of type '" "int""'");
+    } 
+    arg1 = (int)(val1);
+    ecode2 = SWIG_AsVal_int(args(1), &val2);
+    if (!SWIG_IsOK(ecode2)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "my_mod" "', argument " "2"" of type '" "int""'");
+    } 
+    arg2 = (int)(val2);
+    result = (int)my_mod(arg1,arg2);
+    _outv = SWIG_From_int((int)(result));
+    if (_outv.is_defined()) _outp = SWIG_Octave_AppendOutput(_outp, _outv);
+    return _out;
+  fail:
+    return octave_value_list();
+  }
+  catch(...) {
+    throw;
+  }
 }
 
+
+
+static const struct swig_octave_member swig_globals[] = {
+{"My_variable",0,_wrap_My_variable_get,_wrap_My_variable_set,2,0},
+{"fact",_wrap_fact,0,0,2,0},
+{"my_mod",_wrap_my_mod,0,0,2,0},
+{0,0,0,0,0,0}
+};
 
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
 
@@ -1672,52 +2953,6 @@ static swig_cast_info *swig_cast_initial[] = {
 
 
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (END) -------- */
-
-
-
-
-SWIGRUNTIME void
-SWIG_V8_SetModule(v8::Local<v8::Context> context, swig_module_info *swig_module) {
-  v8::Local<v8::Object> global_obj = context->Global();
-  v8::Local<v8::External> mod = SWIGV8_EXTERNAL_NEW(swig_module);
-  assert(!mod.IsEmpty());
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(v8::Isolate::GetCurrent(), SWIGV8_STRING_NEW("swig_module_info_data"));
-  global_obj->SetPrivate(context, privateKey, mod);
-}
-
-SWIGRUNTIME swig_module_info *
-SWIG_V8_GetModule(v8::Local<v8::Context> context) {
-  v8::Local<v8::Object> global_obj = context->Global();
-  v8::Local<v8::Private> privateKey = v8::Private::ForApi(v8::Isolate::GetCurrent(), SWIGV8_STRING_NEW("swig_module_info_data"));
-  v8::Local<v8::Value> moduleinfo;
-  if (!global_obj->GetPrivate(context, privateKey).ToLocal(&moduleinfo))
-    return 0;
-
-  if (moduleinfo.IsEmpty() || moduleinfo->IsNull() || moduleinfo->IsUndefined())
-  {
-    // It's not yet loaded
-    return 0;
-  }
-
-  v8::Local<v8::External> moduleinfo_extern = v8::Local<v8::External>::Cast(moduleinfo);
-
-  if (moduleinfo_extern.IsEmpty() || moduleinfo_extern->IsNull() || moduleinfo_extern->IsUndefined())
-  {
-    // Something's not right
-    return 0;
-  }
-
-  void *ptr = moduleinfo_extern->Value();
-  assert(ptr);
-  swig_module_info *retptr = static_cast<swig_module_info *>(ptr);
-  assert(retptr);
-  return retptr;
-}
-
-#define SWIG_GetModule(clientdata)                SWIG_V8_GetModule(clientdata)
-#define SWIG_SetModule(clientdata, pointer)       SWIG_V8_SetModule(clientdata, pointer)
-#define SWIG_INIT_CLIENT_DATA_TYPE                v8::Local<v8::Context>
-
 
 /* -----------------------------------------------------------------------------
  * Type initialization:
@@ -2120,57 +3355,421 @@ SWIG_PropagateClientData(void) {
 #endif
 
 
-#if !defined(NODE_MODULE_VERSION) || (NODE_MODULE_VERSION < 12)
-// Note: 'extern "C"'' disables name mangling which makes it easier to load the symbol manually
-extern "C" void SWIGV8_INIT (SWIGV8_OBJECT exports_obj)
-#elif (NODE_MODULE_VERSION < 64)
-void SWIGV8_INIT (SWIGV8_OBJECT exports_obj, SWIGV8_VALUE /*module*/, void*)
+
+static bool SWIG_init_user(octave_swig_type* module_ns);
+
+SWIGINTERN bool SWIG_Octave_LoadModule(std::string name) {
+  bool retn = false;
+  {
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+#elif SWIG_OCTAVE_PREREQ(4,2,0)
+    octave::unwind_protect frame;
+    frame.protect_var(discard_error_messages);          discard_error_messages = true;
+    frame.protect_var(discard_warning_messages);        discard_warning_messages = true;
+#elif SWIG_OCTAVE_PREREQ(3,3,50)
+    unwind_protect frame;
+    frame.protect_var(error_state);                     error_state = 0;
+    frame.protect_var(warning_state);                   warning_state = 0;
+    frame.protect_var(discard_error_messages);          discard_error_messages = true;
+    frame.protect_var(discard_warning_messages);        discard_warning_messages = true;
 #else
-void SWIGV8_INIT (SWIGV8_OBJECT exports_obj, SWIGV8_VALUE /*module*/, v8::Local<v8::Context> context, void*)
+    unwind_protect::begin_frame("SWIG_Octave_LoadModule");
+    unwind_protect_int(error_state);                    error_state = 0;
+    unwind_protect_int(warning_state);                  warning_state = 0;
+    unwind_protect_bool(discard_error_messages);        discard_error_messages = true;
+    unwind_protect_bool(discard_warning_messages);      discard_warning_messages = true;
 #endif
-{
-#if !defined(NODE_MODULE_VERSION) || NODE_MODULE_VERSION < 64
-  v8::Local<v8::Context> context = SWIGV8_CURRENT_CONTEXT();
+#if SWIG_OCTAVE_PREREQ(4,2,0)
+    try {
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+      octave::feval(name, octave_value_list(), 0);
+#else
+      feval(name, octave_value_list(), 0);
 #endif
-
-  SWIG_InitializeModule(context);
-
-
-  // a class template for creating proxies of undefined types
-  SWIGV8_SET_CLASS_TEMPL(SWIGV8_SWIGTYPE_Proxy_class_templ, SWIGV8_CreateClassTemplate("SwigProxy"));
-
-  /* create objects for namespaces */
-  
-
-  /* create class templates */
-  
-
-  /* register wrapper functions */
-  SWIGV8_AddStaticVariable(exports_obj, "My_variable", _wrap_My_variable_get, _wrap_My_variable_set, context);
-
-
-  /* setup inheritances */
-  
-
-  /* class instances */
-  
-
-  /* add static class functions and variables */
-  SWIGV8_AddStaticFunction(exports_obj, "fact", _wrap_fact, context);
-SWIGV8_AddStaticFunction(exports_obj, "my_mod", _wrap_my_mod, context);
-
-
-  /* register classes */
-  
-
-  /* create and register namespace objects */
-  
+      retn = true;
+    } catch (octave::execution_exception&) { }
+#else
+    feval(name, octave_value_list(), 0);
+    retn = (error_state == 0);
+#endif
+#if !SWIG_OCTAVE_PREREQ(3,3,50)
+    unwind_protect::run_frame("SWIG_Octave_LoadModule");
+#endif
+  }
+  if (!retn) {
+    error(SWIG_name_d ": could not load module `%s'", name.c_str());
+  }
+  return retn;
 }
 
-#if defined(BUILDING_NODE_EXTENSION)
-#if (NODE_MODULE_VERSION < 64)
-NODE_MODULE(example, example_initialize)
+SWIGINTERN bool SWIG_Octave_InstallFunction(octave_function *octloadfcn, std::string name) {
+  bool retn = false;
+  {
+#if SWIG_OCTAVE_PREREQ(6,0,0)
+#elif SWIG_OCTAVE_PREREQ(4,2,0)
+    octave::unwind_protect frame;
+    frame.protect_var(discard_error_messages);          discard_error_messages = true;
+    frame.protect_var(discard_warning_messages);        discard_warning_messages = true;
+#elif SWIG_OCTAVE_PREREQ(3,3,50)
+    unwind_protect frame;
+    frame.protect_var(error_state);                     error_state = 0;
+    frame.protect_var(warning_state);                   warning_state = 0;
+    frame.protect_var(discard_error_messages);          discard_error_messages = true;
+    frame.protect_var(discard_warning_messages);        discard_warning_messages = true;
 #else
-NODE_MODULE_CONTEXT_AWARE(example, example_initialize)
+    unwind_protect::begin_frame("SWIG_Octave_InstallFunction");
+    unwind_protect_int(error_state);                    error_state = 0;
+    unwind_protect_int(warning_state);                  warning_state = 0;
+    unwind_protect_bool(discard_error_messages);        discard_error_messages = true;
+    unwind_protect_bool(discard_warning_messages);      discard_warning_messages = true;
+#endif
+    octave_value_list args;
+    args.append(name);
+    args.append(octloadfcn->fcn_file_name());
+#if SWIG_OCTAVE_PREREQ(4,2,0)
+    try {
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+      octave::feval("autoload", args, 0);
+#else
+      feval("autoload", args, 0);
+#endif
+      retn = true;
+    } catch (octave::execution_exception&) { }
+#else
+    feval("autoload", args, 0);
+    retn = (error_state == 0);
+#endif
+#if !SWIG_OCTAVE_PREREQ(3,3,50)
+    unwind_protect::run_frame("SWIG_Octave_InstallFunction");
+#endif
+  }
+  if (!retn) {
+    error(SWIG_name_d ": could not load function `%s'", name.c_str());
+  }
+  return retn;
+}
+
+static const char *const subclass_usage = "-*- texinfo -*- \n\
+@deftypefn {Loadable Function} {} subclass()\n\
+@deftypefnx{Loadable Function} {} subclass(@var{swigclass}, @var{name}, @var{fcn}, @dots{})\n\
+Subclass a C++ class from within Octave, and provide implementations of its virtual methods.\n\
+\n\
+See the SWIG manual for usage examples.\n\
+@end deftypefn";
+
+DEFUN_DLD( subclass, args, nargout, subclass_usage ) {
+  octave_swig_type *top = new octave_swig_type;
+  for (int j = 0; j < args.length(); ++j) {
+    if (args(j).type_id() == octave_swig_ref::static_type_id()) {
+      octave_swig_ref *osr = static_cast < octave_swig_ref *>(args(j).internal_rep());
+      octave_swig_type *ost = osr->get_ptr();
+      if (!ost->is_owned()) {
+        error("subclass: cannot subclass object not constructed on octave side");
+        return octave_value_list();
+      }
+      top->merge(*ost);
+    } else if (args(j).is_function_handle()) {
+      top->assign(args(j).fcn_handle_value()->fcn_name(), args(j));
+    } else if (args(j).is_string()) {
+      if (j + 1 >= args.length()) {
+        error("subclass: member assignments must be of string,value form");
+        return octave_value_list();
+      }
+      top->assign(args(j).string_value(), args(j + 1));
+      ++j;
+    } else {
+      error("subclass: invalid arguments to subclass()");
+      return octave_value_list();
+    }
+  }
+  return octave_value(Swig::swig_value_ref(top));
+}
+
+static const char *const swig_type_usage = "-*- texinfo -*- \n\
+@deftypefn {Loadable Function} {} swig_type(@var{swigref})\n\
+Return the underlying C/C++ type name of a SWIG-wrapped object.\n\
+@end deftypefn";
+
+DEFUN_DLD( swig_type, args, nargout, swig_type_usage ) {
+  if (args.length() != 1) {
+    error("swig_type: must be called with only a single object");
+    return octave_value_list();
+  }
+  octave_swig_type *ost = Swig::swig_value_deref(args(0));
+  if (!ost) {
+    error("swig_type: object is not a swig_ref");
+    return octave_value_list();
+  }
+  return octave_value(ost->swig_type_name());
+}
+
+static const char *const swig_typequery_usage = "-*- texinfo -*- \n\
+@deftypefn {Loadable Function} {} swig_typequery(@var{string})\n\
+Return @var{string} if it is a recognised SWIG-wrapped C/C++ type name;\n\
+otherwise return `<unknown>'.\n\
+@end deftypefn";
+
+DEFUN_DLD( swig_typequery, args, nargout, swig_typequery_usage ) {
+  if (args.length() != 1 || !args(0).is_string()) {
+    error("swig_typequery: must be called with single string argument");
+    return octave_value_list();
+  }
+  swig_module_info *module = SWIG_GetModule(0);
+  swig_type_info *type = SWIG_TypeQueryModule(module, module, args(0).string_value().c_str());
+  if (!type)
+    return octave_value("<unknown>");
+  return octave_value(type->name);
+}
+
+static const char *const swig_this_usage = "-*- texinfo -*- \n\
+@deftypefn {Loadable Function} {} swig_this(@var{swigref})\n\
+Return the underlying C/C++ pointer of a SWIG-wrapped object.\n\
+@end deftypefn";
+
+DEFUN_DLD( swig_this, args, nargout, swig_this_usage ) {
+  if (args.length() != 1) {
+    error("swig_this: must be called with only a single object");
+    return octave_value_list();
+  }
+  if (args(0).is_matrix_type() && args(0).rows() == 0 && args(0).columns() == 0)
+    return octave_value(octave_uint64(0));
+  octave_swig_type *ost = Swig::swig_value_deref(args(0));
+  if (!ost) {
+    error("swig_this: object is not a swig_ref");
+    return octave_value_list();
+  }
+  return octave_value(octave_uint64((unsigned long long) ost->swig_this()));
+}
+
+static const char *const swig_octave_prereq_usage = "-*- texinfo -*- \n\
+@deftypefn {Loadable Function} {} swig_octave_prereq(@var{major}, @var{minor}, @var{patch})\n\
+Return true if the version of Octave is at least @var{major}.@var{minor}.@var{patch}.\n\
+@end deftypefn";
+
+DEFUN_DLD( swig_octave_prereq, args, nargout, swig_octave_prereq_usage ) {
+  if (args.length() != 3) {
+    error("swig_octave_prereq: must be called with 3 arguments");
+    return octave_value_list();
+  }
+  const int major = args(0).int_value();
+  const int minor = args(1).int_value();
+  const int patch = args(2).int_value();
+  const bool prereq = SWIG_OCTAVE_PREREQ(major, minor, patch);
+  return octave_value(prereq);
+}
+
+static const char *const swig_exit_usage = "-*- texinfo -*- \n\
+@deftypefn {Loadable Function} {} swig_exit([@var{exit_status}])\n\
+Exit Octave without performing any memory cleanup.\n\
+@end deftypefn";
+
+DEFUN_DLD( swig_exit, args, nargout, swig_exit_usage ) {
+  if (args.length() > 1) {
+    error("swig_exit: must be called with at most one arguments");
+    return octave_value_list();
+  }
+  int exit_status = 0;
+  if (args.length() == 1) {
+    exit_status = args(0).int_value();
+  }
+  ::_Exit(exit_status);
+  return octave_value();
+}
+
+static const char *const SWIG_name_usage = "-*- texinfo -*- \n\
+@deftypefn {Loadable Module} {} " SWIG_name_d "\n\
+Loads the SWIG-generated module `" SWIG_name_d "'.\n\
+@end deftypefn";
+
+DEFUN_DLD( SWIG_name, args, nargout, SWIG_name_usage ) {
+
+  static octave_swig_type* module_ns = 0;
+
+  // workaround to prevent octave seg-faulting on exit: set Octave exit function
+  // octave_exit to _Exit, which exits immediately without trying to cleanup memory.
+  // definitely affected version 3.2.*, not sure about 3.3.*, seems to be fixed in
+  // version 3.4.*, reappeared in 4.2.*, hack not possible in 4.4.* or later due to
+  // removal of octave_exit, so turn on for all versions between 3.2.*. and 4.4.*.
+  // can be turned off with macro definition.
+#ifndef SWIG_OCTAVE_NO_SEGFAULT_HACK
+#if !SWIG_OCTAVE_PREREQ(4,4,0)
+#if SWIG_OCTAVE_PREREQ(3,2,0)
+  octave_exit = ::_Exit;
 #endif
 #endif
+#endif
+
+  // check for no input and output args
+  if (args.length() != 0 || nargout != 0) {
+    print_usage();
+    return octave_value_list();
+  }
+
+  // create module on first function call
+  if (!module_ns) {
+
+    // workaround bug in octave where installing global variable of custom type and then
+    // exiting without explicitly clearing the variable causes octave to segfault.
+#if SWIG_OCTAVE_PREREQ(3,2,0)
+    octave_value_list eval_args;
+    eval_args.append("base");
+    eval_args.append("function __swig_atexit__; "
+                     "  if mislocked() "
+                     "    clear -all; "
+                     "  else "
+                     "    mlock(); "
+                     "  endif; "
+                     "endfunction; "
+                     "__swig_atexit__; "
+                     "atexit(\"__swig_atexit__\", false); "
+                     "atexit(\"__swig_atexit__\")");
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+    octave::feval("evalin", eval_args, 0);
+#else
+    feval("evalin", eval_args, 0);
+#endif
+#endif
+
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+    {
+      octave::type_info& typeinfo = octave::interpreter::the_interpreter()->get_type_info();
+      string_vector types = typeinfo.installed_type_names();
+      bool register_octave_swig_ref = true;
+      bool register_octave_swig_packed = true;
+      for (int i = 0; i < types.numel(); ++i) {
+        if (types(i) == octave_swig_ref::static_type_name()) {
+          register_octave_swig_ref = false;
+          octave_swig_ref::set_type_id(i);
+        }
+        if (types(i) == octave_swig_packed::static_type_name()) {
+          register_octave_swig_packed = false;
+	  octave_swig_packed::set_type_id(i);
+        }
+      }
+      if (register_octave_swig_ref) {
+        octave_swig_ref::register_type();
+      }
+      if (register_octave_swig_packed) {
+        octave_swig_packed::register_type();
+      }
+    }
+#else
+    octave_swig_ref::register_type();
+    octave_swig_packed::register_type();
+#endif
+    SWIG_InitializeModule(0);
+    SWIG_PropagateClientData();
+
+#if SWIG_OCTAVE_PREREQ(8,0,0)
+    octave::tree_evaluator& tree_eval = octave::interpreter::the_interpreter()->get_evaluator();
+    octave_function *me = tree_eval.current_function();
+#elif SWIG_OCTAVE_PREREQ(6,0,0)
+    octave::tree_evaluator& tree_eval = octave::interpreter::the_interpreter()->get_evaluator();
+    octave::call_stack& stack = tree_eval.get_call_stack();
+    octave_function *me = stack.current_function();
+#elif SWIG_OCTAVE_PREREQ(4,4,0)
+    octave::call_stack& stack = octave::interpreter::the_interpreter()->get_call_stack();
+    octave_function *me = stack.current();
+#else
+    octave_function *me = octave_call_stack::current();
+#endif
+
+    if (!SWIG_Octave_InstallFunction(me, "subclass")) {
+      return octave_value_list();
+    }
+    if (!SWIG_Octave_InstallFunction(me, "swig_type")) {
+      return octave_value_list();
+    }
+    if (!SWIG_Octave_InstallFunction(me, "swig_typequery")) {
+      return octave_value_list();
+    }
+    if (!SWIG_Octave_InstallFunction(me, "swig_this")) {
+      return octave_value_list();
+    }
+    if (!SWIG_Octave_InstallFunction(me, "swig_octave_prereq")) {
+      return octave_value_list();
+    }
+    if (!SWIG_Octave_InstallFunction(me, "swig_exit")) {
+      return octave_value_list();
+    }
+
+    octave_swig_type* cvar_ns=0;
+    if (std::string(SWIG_global_name) != ".") {
+      cvar_ns=new octave_swig_type;
+      for (int j=0;swig_globals[j].name;++j)
+        if (swig_globals[j].get_method)
+          cvar_ns->assign(swig_globals[j].name,&swig_globals[j]);
+    }
+
+    module_ns=new octave_swig_type(0, 0, 0, true);
+    if (std::string(SWIG_global_name) != ".") {
+      module_ns->assign(SWIG_global_name,Swig::swig_value_ref(cvar_ns));
+    }
+    else {
+      for (int j=0;swig_globals[j].name;++j)
+        if (swig_globals[j].get_method)
+          module_ns->assign(swig_globals[j].name,&swig_globals[j]);
+    }
+    for (int j=0;swig_globals[j].name;++j)
+      if (swig_globals[j].method)
+        module_ns->assign(swig_globals[j].name,&swig_globals[j]);
+
+    // * need better solution here; swig_type -> octave_class mapping is
+    // * really n-to-1, in some cases such as template partial spec, etc.
+    // * see failing tests.
+    for (int j=0;swig_types[j];++j)
+      if (swig_types[j]->clientdata) {
+        swig_octave_class* c=(swig_octave_class*)swig_types[j]->clientdata;
+        module_ns->assign(c->name,
+                        Swig::swig_value_ref
+                        (new octave_swig_type(0,swig_types[j])));
+      }
+
+    if (!SWIG_init_user(module_ns)) {
+      delete module_ns;
+      module_ns=0;
+      return octave_value_list();
+    }
+
+    SWIG_InstallOps(octave_swig_ref::static_type_id());
+
+    octave_swig_type::swig_member_const_iterator mb;
+    for (mb = module_ns->swig_members_begin(); mb != module_ns->swig_members_end(); ++mb) {
+      if (mb->second.first && mb->second.first->method) {
+        if (!SWIG_Octave_InstallFunction(me, mb->first)) {
+          return octave_value_list();
+        }
+      }
+    }
+
+#if SWIG_OCTAVE_PREREQ(4,4,0)
+    octave::interpreter::the_interpreter()->mlock();
+#elif SWIG_OCTAVE_PREREQ(3,2,0)
+    mlock();
+#else
+    mlock(me->name());
+#endif
+
+  }
+
+  octave_swig_type::swig_member_const_iterator mb;
+  for (mb = module_ns->swig_members_begin(); mb != module_ns->swig_members_end(); ++mb) {
+    if (mb->second.second.is_defined()) {
+      SWIG_Octave_SetGlobalValue(mb->first, mb->second.second);
+      SWIG_Octave_LinkGlobalValue(mb->first);
+    }
+  }
+
+  SWIG_Octave_SetGlobalValue(SWIG_name_d, module_ns->as_value());
+  SWIG_Octave_LinkGlobalValue(SWIG_name_d);
+
+  return octave_value_list();
+
+}
+
+
+static bool SWIG_init_user(octave_swig_type* module_ns)
+{
+  return true;
+}
+
